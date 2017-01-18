@@ -24,7 +24,7 @@ while(True):
 
     contour_img, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
     
-    contours.sort(key = lambda s: len(s)) #Sort the list of contours by the length of each contour (smallest to biggest)
+    contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest)
     
     thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR)
     
@@ -35,8 +35,8 @@ while(True):
     for i in range(shapes):
         #print(i)
         try:
-            curCont = contours[-1*(i+1)]
-            shapeContours.append(-1*(i+1))
+            curCont = contours[i]
+            shapeContours.append(i)
         except IndexError:
             continue
         
