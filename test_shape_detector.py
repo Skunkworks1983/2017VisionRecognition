@@ -22,24 +22,24 @@ print(thresh)
 sd = cShapeDetector()
 
 # convert image to grayscale, blur it slightly,
-# and threshold it
+# and threshold it, displaying it each time for bug fixing
 grayIm = cv2.cvtColor(originalIm, cv2.COLOR_BGR2GRAY)
 
-cv2.imshow("Gray Image", grayIm)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#cv2.imshow("Gray Image", grayIm)
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()
 
 blurredIm = cv2.GaussianBlur(grayIm, (5, 5), 0)
 
-cv2.imshow("Gaussian Image", blurredIm)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#cv2.imshow("Gaussian Image", blurredIm)
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()
 
 binaryIm = cv2.threshold(blurredIm, thresh, 255, cv2.THRESH_BINARY) [1]
 
-cv2.imshow("Binary Image", binaryIm)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#cv2.imshow("Binary Image", binaryIm)
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()
 
 #standardize display image
 displayIm = originalIm
@@ -51,16 +51,25 @@ if displayIm.all() != originalIm.all():
 cnts = cv2.findContours(binaryIm, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 cnts = cnts[0] if imutils.is_cv2() else cnts[1]
 
+# Find the average length of a contour
 
+cAvgLen = 0
+cTotalContours = 0
+
+for c in cnts:
+    cAvgLen = cAvgLen + cv2.contourArea(c)
+    cTotalContours = cTotalContours + 1
+cAvgLen = cAvgLen / cTotalContours
 
 # loop over the contours
 for c in cnts:
     print("found contour")
  
-    # compute the center of the contour, then detect the name of the
+    # compute the center of the contour, throw it out if smaller than average, 
+    #then detect the name of the
     # shape using only the contour
     M = cv2.moments(c)
-    if M["m00"] > 10000:
+    if M["m00"] > cTotalContours:
         try:
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
@@ -78,7 +87,7 @@ for c in cnts:
         print("contour to small")
 
 # show the output image 
-displayIm = cv2.resize(displayIm, (1280, 800))
+displayIm = cv2.resize(displayIm, (1280, 700))
 cv2.imshow("Image", displayIm)
         
 cv2.waitKey(0)
