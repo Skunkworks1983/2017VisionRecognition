@@ -7,7 +7,7 @@ It uses shape_detector.py to determine the number of verticies, and then display
 from cShapeDetector import cShapeDetector
 import numpy as np
 import sys
-import imutils
+import imutils #combine imports (see tracker.py)
 import cv2
 
 originalIm = cv2.imread(sys.argv[1])
@@ -29,13 +29,13 @@ grayIm = cv2.cvtColor(originalIm, cv2.COLOR_BGR2GRAY)
 #cv2.waitKey(0)
 #cv2.destroyAllWindows()
 
-blurredIm = cv2.GaussianBlur(grayIm, (5, 5), 0)
+blurredIm = cv2.GaussianBlur(grayIm, (5, 5), 0) #magic numbers
 
 #cv2.imshow("Gaussian Image", blurredIm)
 #cv2.waitKey(0)
 #cv2.destroyAllWindows()
 
-binaryIm = cv2.threshold(blurredIm, thresh, 255, cv2.THRESH_BINARY) [1]
+binaryIm = cv2.threshold(blurredIm, thresh, 255, cv2.THRESH_BINARY)[1]
 
 #cv2.imshow("Binary Image", binaryIm)
 #cv2.waitKey(0)
@@ -71,14 +71,14 @@ for c in cnts:
     M = cv2.moments(c)
     if M["m00"] > cTotalContours:
         try:
-            cX = int(M["m10"] / M["m00"])
+            cX = int(M["m10"] / M["m00"]) #at least explain that this is magic
             cY = int(M["m01"] / M["m00"])
             shape = sd.detect(c)
 
             # multiply the contour (x, y)-coordinates by the resize ratio,
             # then draw the contours and the name of the shape on the image
-            cv2.drawContours(displayIm, [c], -1, (0, 0, 255), 2)
-            cv2.putText(displayIm, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX,
+            cv2.drawContours(displayIm, [c], -1, (0, 0, 255), 2) #magic numbers
+            cv2.putText(displayIm, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, #magic numbers
                 1, (0, 0, 255), 2)
             print("found shapes")
         except ZeroDivisionError:
@@ -87,7 +87,7 @@ for c in cnts:
         print("contour to small")
 
 # show the output image 
-displayIm = cv2.resize(displayIm, (1280, 700))
+displayIm = cv2.resize(displayIm, (1280, 700)) #magic numbers
 cv2.imshow("Image", displayIm)
         
 cv2.waitKey(0)
