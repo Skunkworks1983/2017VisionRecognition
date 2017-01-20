@@ -6,9 +6,10 @@ It uses shape_detector.py to determine the number of verticies, and then display
 # import the necessary packages
 from cShapeDetector import cShapeDetector
 import numpy as np
-import sys
-import imutils #combine imports (see tracker.py)
-import cv2
+import sys, imutils, cv2
+
+WIDTH_RES = 2680
+HEIGHT_RES = 700
 
 originalIm = cv2.imread(sys.argv[1])
 
@@ -29,13 +30,14 @@ grayIm = cv2.cvtColor(originalIm, cv2.COLOR_BGR2GRAY)
 #cv2.waitKey(0)
 #cv2.destroyAllWindows()
 
-blurredIm = cv2.GaussianBlur(grayIm, (5, 5), 0) #magic numbers
+blurredIm = cv2.GaussianBlur(grayIm, (5, 5), 0) # kernal size, more at http://docs.opencv.org/3.1.0/d4/d86/group__imgproc__filter.html#gaabe8c836e97159a9193fb0b11ac52cf1
 
 #cv2.imshow("Gaussian Image", blurredIm)
 #cv2.waitKey(0)
 #cv2.destroyAllWindows()
 
-binaryIm = cv2.threshold(blurredIm, thresh, 255, cv2.THRESH_BINARY)[1]
+maxThresh = 255
+binaryIm = cv2.threshold(blurredIm, thresh, maxThresh, cv2.THRESH_BINARY)[1]
 
 #cv2.imshow("Binary Image", binaryIm)
 #cv2.waitKey(0)
@@ -52,7 +54,6 @@ cnts = cv2.findContours(binaryIm, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 cnts = cnts[0] if imutils.is_cv2() else cnts[1]
 
 # Find the average length of a contour
-
 cAvgLen = 0
 cTotalContours = 0
 
@@ -71,14 +72,14 @@ for c in cnts:
     M = cv2.moments(c)
     if M["m00"] > cTotalContours:
         try:
-            cX = int(M["m10"] / M["m00"]) #at least explain that this is magic
+            cX = int(M["m10"] / M["m00"]) #https://en.wikipedia.org/wiki/Image_moment
             cY = int(M["m01"] / M["m00"])
             shape = sd.detect(c)
 
             # multiply the contour (x, y)-coordinates by the resize ratio,
             # then draw the contours and the name of the shape on the image
-            cv2.drawContours(displayIm, [c], -1, (0, 0, 255), 2) #magic numbers
-            cv2.putText(displayIm, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, #magic numbers
+            cv2.drawContours(displayIm, [c], -1, (0, 0, 255), 2)
+            cv2.putText(displayIm, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX,
                 1, (0, 0, 255), 2)
             print("found shapes")
         except ZeroDivisionError:
@@ -87,7 +88,7 @@ for c in cnts:
         print("contour to small")
 
 # show the output image 
-displayIm = cv2.resize(displayIm, (1280, 700)) #magic numbers
+displayIm = cv2.resize(displayIm, (WIDTH_RES, HEIGHT_RES))
 cv2.imshow("Image", displayIm)
         
 cv2.waitKey(0)
