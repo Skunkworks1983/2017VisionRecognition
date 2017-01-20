@@ -2,6 +2,7 @@ from cShapeDetector import cShapeDetector
 import numpy as np
 import cv2
 import time
+import sys
 
 cap = cv2.VideoCapture(0)
 
@@ -15,6 +16,7 @@ def doNothing(val):
 
 t_val = 10
 shapes = 2
+imageNum = 0
 cv2.namedWindow("trackbar")
 cv2.createTrackbar("t_val", "trackbar", t_val, 255, doNothing) #Creates a trackbar on the window "trackbar" to adjust t_val (threshold)
 cv2.createTrackbar("shapes", "trackbar", shapes, 100, doNothing) #Creates a trackbar on the window "trackbar" to adjust shapes (total recs found)
@@ -22,6 +24,8 @@ cv2.createTrackbar("shapes", "trackbar", shapes, 100, doNothing) #Creates a trac
 while(True):
     # Capture frame-by-frame
     ret, frame = cap.read()
+    saved = frame.copy()
+    
     t_val = cv2.getTrackbarPos("t_val", "trackbar")       #Update the image and trackbar positions
     shapes = cv2.getTrackbarPos("shapes", "trackbar")
 
@@ -78,7 +82,11 @@ while(True):
                 1, (255, 0, 0), 1)
     
     # Display the resulting frame
-    cv2.imshow('frame', displayed)
+    cv2.imshow('image', displayed)
+    
+    if cv2.waitKey(1) & 0xFF == ord(' '):
+        cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved)
+        imageNum = imageNum + 1
     
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
