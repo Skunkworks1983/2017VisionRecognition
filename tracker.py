@@ -1,4 +1,4 @@
-from cShapeDetector import cShapeDetector
+from cShapeDetector import cShapeDetector #cShapeDetector is never used
 import numpy as np
 import cv2, time, sys, math, classifiers
 
@@ -49,13 +49,13 @@ while(True):
     saved = frame.copy() #to save the image if spacebar was pressed
     
     t_val = cv2.getTrackbarPos("t_val", "trackbar")       #Update the image and trackbar positions
-    gray = frame[:,:,0]
-    # Our operations on the frame come here
-    #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) #Convert to gray, and then threshold based on t_val
+    gray = frame[:,:,0] # Magic number
+    # Our operations on the frame come here 
+    #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) #Convert to gray, and then threshold based on t_val on #Commented out line.
     maxThresh = 255
-    ret, thresholded = cv2.threshold(gray, t_val, maxThresh, cv2.THRESH_BINARY) #white if above thresh else black
+    ret, thresholded = cv2.threshold(gray, t_val, maxThresh, cv2.THRESH_BINARY) #white if above thresh else black #comment uses wrong variable name
     
-    #thresholded = np.uint8(np.clip(gray, np.percentile(gray, t_val), 100)) could try to switch to blue-scale later
+    #thresholded = np.uint8(np.clip(gray, np.percentile(gray, t_val), 100)) could try to switch to blue-scale later #Isn't that happening on line 52?
     cv2.imshow("thresholded", thresholded)
 
     contour_img, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
@@ -70,18 +70,18 @@ while(True):
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
         #long and skinny?
-        if s1box[1][1] == 0 or float(s1box[1][0]) / s1box[1][1] < 2:
+        if s1box[1][1] == 0 or float(s1box[1][0]) / s1box[1][1] < 2: #is 2 and 0 a magic number?
             continue
         for s2 in contours:
             if s1 is not s2:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
-                if s1box[1][1] == 0 or s2box[1][1] == 0: continue
+                if s1box[1][1] == 0 or s2box[1][1] == 0: continue #is 0 a magic number?
                 
                 if classifier.classify(s1box, s2box): #look at classifiers.py
                     foundFrames += 1
                     s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
                     s2rot = np.int0(cv2.boxPoints(s2box))
-                    cv2.drawContours(displayed, [s1rot], 0, (0, 0, 255), 2) #draw 
+                    cv2.drawContours(displayed, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                     cv2.drawContours(displayed, [s2rot], 0, (0, 0, 255), 2)
                     cv2.line(displayed, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
                     found = True
