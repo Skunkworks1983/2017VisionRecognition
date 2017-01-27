@@ -17,22 +17,22 @@ def areaRatio(s1, s2):
     area1 = s1[1][0]*s1[1][1]
     area2 = s2[1][0]*s2[1][1]
     areaRatio = area1/area2
-    areaSigma = 0.5
+    areaSigma = 1
     return areaRatio < 1.5 + areaSigma and areaRatio > 1.5 - areaSigma
     
 def centersToTopRatio(s1, s2):
-    heightSigma = 0.25
+    heightSigma = 0.5
     centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
     ratioToTop = centerDistance/s1[1][1]
     ratioToBottom = centerDistance/s2[1][1]
     return ratioToTop < 1.25 + heightSigma and ratioToTop > 1.25 - heightSigma
 
 def matchingRotation(s1, s2):
-    angleSigma = 10
+    angleSigma = 20
     return s1[2] < s2[2] + angleSigma and s1[2] > s2[2] - angleSigma
 
 def betweenHeightRatio(s1, s2):
-    betweenHeightSigma = 0.3
+    betweenHeightSigma = 0.6
     centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
     betweenHeightRatio = centerDistance - (0.5*(s2[1][1]+s1[1][1]))/s1[1][1]
     maxRatio = 50
