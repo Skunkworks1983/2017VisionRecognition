@@ -3,11 +3,14 @@ import math
 class cClassifier():
     def __init__(self):
         self.classifiers = [matchingRotation, areaRatio, centersToTopRatio, betweenHeightRatio] #set the function names of classifiers to use here
-        self.SIGMAS = [10, 0.5, 0.25, 0.3] #Constants of where the sigmas start
+        self.SIGMAS = [15, 0.75, 1, 0.3] #Constants of where the sigmas start
     def classify(self, s1, s2): #returns true if it matches all of the classifiers, false if it fails any of them
+        passFail = []
         for k, v in enumerate(self.classifiers):
             if not v(s1, s2, self.SIGMAS[k]): #call the respective function
+                passFail.append(False)
                 return False
+            passFail.append(True)
         return True
 
 def distance(x1, y1, x2, y2):
