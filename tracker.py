@@ -1,6 +1,15 @@
 from cShapeDetector import cShapeDetector #cShapeDetector is never used
 import numpy as np
-import cv2, time, sys, math, classifiers
+import cv2, time, sys, math, classifiers, argparse, cCamera
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--inputType", type=str, default=file,
+	help="what input type should be used")
+args = vars(ap.parse_args())
+
+if cv2.__version__ == "3.2.0": version = 3
+elif cv2.__version__ == "2.4.9.1": version = 2
+else: print("Unkown openCV version!")
 
 np.set_printoptions(threshold=np.nan)
 
@@ -8,7 +17,7 @@ def loadCapture(filename):
     return cv2.VideoCapture(filename) 
     
 fileName = "./testPhotos/video.h264" #file of the video to load
-cap = loadCapture(fileName) #set to 0 if you want to capture from the webcam
+cam = cCamera.cCamera(args["inputType"], fileName)
 
 def doNothing(val): #necesasry for the return of createTrackbar
     pass
@@ -25,7 +34,7 @@ def saveClick(event,x,y,flags,param):
 t_val = 60 #starting threshold on the slider
 imageNum = 0
 cv2.namedWindow("trackbar", cv2.WINDOW_NORMAL)
-#cv2.resize("trackbar", (640, 480))
+#cv2.resize("trackbar", (640, 480)) #Commented line?
 cv2.createTrackbar("t_val", "trackbar", t_val, 255, doNothing) #Creates a trackbar on the window "trackbar" to adjust t_val (threshold)
 
 frameCount = 0.1 #float so that we get float division
@@ -39,13 +48,7 @@ cv2.setMouseCallback('image', saveClick)
 while(True):
     frameCount += 1
     # Capture frame-by-frame
-    if not cap.grab(): #if the video has run out of frames
-        print("Not cap grab")
-        print("Percentage found: " + str(foundFrames/frameCount))
-        cap = loadCapture(fileName) #reload the video and start again
-        cap.grab() 
-    ret, frame = cap.retrieve() #get a frame
-    
+    frame = cam.nextFrame()
     saved = frame.copy() #to save the image if spacebar was pressed
     
     t_val = cv2.getTrackbarPos("t_val", "trackbar")       #Update the image and trackbar positions
@@ -58,7 +61,8 @@ while(True):
     #thresholded = np.uint8(np.clip(gray, np.percentile(gray, t_val), 100)) could try to switch to blue-scale later #Isn't that happening on line 52?
     cv2.imshow("thresholded", thresholded)
 
-    contour_img, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
+    if (version == 2): contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
+    else: contour_im, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
     
     contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest)
     
@@ -79,8 +83,12 @@ while(True):
                 
                 if classifier.classify(s1box, s2box): #look at classifiers.py
                     foundFrames += 1
-                    s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
-                    s2rot = np.int0(cv2.boxPoints(s2box))
+                    if (version == 2):
+                        s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
+                        s2rot = np.int0(cv2.cv.BoxPoints(s2box))
+                    else:
+                        s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
+                        s2rot = np.int0(cv2.boxPoints(s2box))
                     cv2.drawContours(displayed, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                     cv2.drawContours(displayed, [s2rot], 0, (0, 0, 255), 2)
                     cv2.line(displayed, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
