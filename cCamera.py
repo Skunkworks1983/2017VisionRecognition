@@ -1,4 +1,7 @@
 import cv2
+try: import picamera, picamera.array
+except:
+    pass
 
 class cCamera:
     def __init__(self, inputType, filename):
@@ -7,7 +10,6 @@ class cCamera:
         self.filename = filename
         
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
-            import picamera, picamera.array
             with picamera.PiCamera() as self.camera:
                 with picamera.array.PiRGBArray(self.camera) as self.stream:
                     self.camera.resolution = (320, 240)
