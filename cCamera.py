@@ -1,7 +1,6 @@
 import cv2
 try: import picamera, picamera.array
-except:
-    pass
+except: pass
 
 class cCamera:
     def __init__(self, inputType, filename):
@@ -38,6 +37,7 @@ class cCamera:
                self.cap.grab()
             ret, frame = self.cap.retrieve()
             return frame
+            
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             ret, frame = self.cap.retrieve()
             return frame

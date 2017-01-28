@@ -1,9 +1,18 @@
-
 from cShapeDetector import cShapeDetector #cShapeDetector is never used
 import numpy as np
-import cv2, time, sys, math, classifiers, argparse, cCamera
+import cv2, time, sys, math, classifiers, argparse, cCamera, socket
+
+HOST = 'localhost'
+PORT = 5555
+
+try:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    print('Socket created!')
+except:
+    print('Socket creation fail!')
+
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--inputType", type=str, default=file,
+ap.add_argument("-i", "--inputType", type=str, default="file",
 	help="what input type should be used")
 args = vars(ap.parse_args())
 
@@ -12,11 +21,8 @@ elif cv2.__version__ == "2.4.9.1": version = 2
 else: print("Unkown openCV version!")
 
 np.set_printoptions(threshold=np.nan)
-
-def loadCapture(filename): 
-    return cv2.VideoCapture(filename) 
     
-fileName = "./testPhotos/video.h264" #file of the video to load
+fileName = "./testPhotos/test1.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
 
 def doNothing(val): #necesasry for the return of createTrackbar
@@ -92,10 +98,15 @@ while(True):
                     cv2.drawContours(displayed, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                     cv2.drawContours(displayed, [s2rot], 0, (0, 0, 255), 2)
                     cv2.line(displayed, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
+                    sock.sendto(str((int(s1box[0][0]),int(s1box[0][1]))), (HOST, PORT))
+                    print(str((int(s1box[0][0]),int(s1box[0][1]))))
                     found = True
                     break
         if found: break
                     
+    if not found: 
+        sock.sendto(str((-1,-1)), (HOST, PORT))
+        print(str((-1,-1)))
     parsedContours = contours
     for i in clickedPoints:
         for k,v in enumerate(parsedContours[:]):
