@@ -1,7 +1,7 @@
+
 from cShapeDetector import cShapeDetector #cShapeDetector is never used
 import numpy as np
 import cv2, time, sys, math, classifiers, argparse, cCamera
-
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default=file,
 	help="what input type should be used")
