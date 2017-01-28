@@ -13,7 +13,7 @@ except:
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="file",
-	help="what input type should be used")
+    help="what input type should be used")
 args = vars(ap.parse_args())
 
 if cv2.__version__ == "3.2.0": version = 3
@@ -22,7 +22,7 @@ else: print("Unkown openCV version!")
 
 np.set_printoptions(threshold=np.nan)
     
-fileName = "./testPhotos/test1.h264" #file of the video to load
+fileName = "./testPhotos/testvidout.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
 
 def doNothing(val): #necesasry for the return of createTrackbar
@@ -101,18 +101,18 @@ while(True):
                     if classifier.classify(s1box, s2box, False): #look at classifiers.py
                         foundFrames += 1
                 
-                    if (version == 2):
-                        s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
-                        s2rot = np.int0(cv2.cv.BoxPoints(s2box))
-                    else:
-                        s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
-                        s2rot = np.int0(cv2.boxPoints(s2box))
-                    cv2.drawContours(displayed, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
-                    cv2.drawContours(displayed, [s2rot], 0, (0, 0, 255), 2)
-                    cv2.line(displayed, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
-                    sock.sendto(str((int(s1box[0][0]),int(s1box[0][1]))), (HOST, PORT))
-                    print(str((int(s1box[0][0]),int(s1box[0][1]))))
-                    found = True
+                        if (version == 2):
+                            s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
+                            s2rot = np.int0(cv2.cv.BoxPoints(s2box))
+                        else:
+                            s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
+                            s2rot = np.int0(cv2.boxPoints(s2box))
+                        cv2.drawContours(displayed, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
+                        cv2.drawContours(displayed, [s2rot], 0, (0, 0, 255), 2)
+                        cv2.line(displayed, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
+                        sock.sendto(str((int(s1box[0][0]),int(s1box[0][1]))), (HOST, PORT))
+                        print(str((int(s1box[0][0]),int(s1box[0][1]))))
+                        found = True
     if not found: 
         sock.sendto(str((-1,-1)), (HOST, PORT))
         print(str((-1,-1)))
