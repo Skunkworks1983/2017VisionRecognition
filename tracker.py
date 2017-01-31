@@ -22,7 +22,7 @@ else: print("Unkown openCV version!")
 
 np.set_printoptions(threshold=np.nan)
     
-fileName = "./testPhotos/testvidout.h264" #file of the video to load
+fileName = "./testVideos/tests.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
 
 def doNothing(val): #necesasry for the return of createTrackbar
@@ -90,9 +90,9 @@ while(True):
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
         #long and skinny?
-        if s1box[1][0] == 0 or float(s1box[1][1]) / s1box[1][0] < 2:
+        '''if s1box[1][0] == 0 or float(s1box[1][1]) / s1box[1][0] < 1:
             print("Not long and skinny")
-            continue
+            continue'''
         for s2 in contours:
             if s1 is not s2:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
