@@ -1,4 +1,4 @@
-import cv2
+import cv2, argparse
 try: import picamera, picamera.array
 except: pass
 
@@ -18,6 +18,13 @@ class cCamera:
             
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             self.cap = cv2.VideoCapture(0)
+
+    def getSysInfo(self):
+        if cv2.__version__ == "3.2.0": version = 3
+        elif cv2.__version__ == "2.4.9.1": version = 2
+        else: print("Unkown openCV version!")
+        
+        return version
 
     def nextFrame(self):
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI"):

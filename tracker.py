@@ -22,7 +22,7 @@ else: print("Unkown openCV version!")
 
 np.set_printoptions(threshold=np.nan)
     
-fileName = "./testPhotos/testvidout.h264" #file of the video to load
+fileName = "./testVideos/test8.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
 
 def doNothing(val): #necesasry for the return of createTrackbar
@@ -36,6 +36,9 @@ def saveClick(event,x,y,flags,param):
     global clickedPoints
     if event == cv2.EVENT_LBUTTONDOWN:
         clickedPoints.append((x,y))
+
+def map(val, width):
+    return ((2*val + 0.0)/width) - 1
 
 DEBUG = False
         
@@ -53,14 +56,20 @@ classifier = classifiers.cClassifier() #look in classifiers.py
 cv2.namedWindow('image')
 cv2.setMouseCallback('image', saveClick)
 
+width = 0
+height = 0
+lastKnown = ""
 while(True):
     frameCount += 1
     # Capture frame-by-frame
     frame = cam.nextFrame()
+    
     if(frame.shape[1] > frame.shape[0]):
         frame = cv2.transpose(frame, frame)
     
+    
     frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)
+    width, height = frame.shape[1], frame.shape[0]
         
     saved = frame.copy() #to save the image if spacebar was pressed
     
@@ -90,9 +99,9 @@ while(True):
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
         #long and skinny?
-        if s1box[1][0] == 0 or float(s1box[1][1]) / s1box[1][0] < 2:
+        '''if s1box[1][0] == 0 or float(s1box[1][1]) / s1box[1][0] < 1:
             print("Not long and skinny")
-            continue
+            continue'''
         for s2 in contours:
             if s1 is not s2:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
@@ -110,12 +119,15 @@ while(True):
                         cv2.drawContours(displayed, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                         cv2.drawContours(displayed, [s2rot], 0, (0, 0, 255), 2)
                         cv2.line(displayed, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
-                        sock.sendto(str((int(s1box[0][0]),int(s1box[0][1]))), (HOST, PORT))
-                        print(str((int(s1box[0][0]),int(s1box[0][1]))))
+                        #print(str(-1*(width/2.0)) + ", " + str(int(s1box[0][0])))
+                        xProportional = map(int(s1box[0][0]), width)
+                        lastKnown = xProportional
+                        sock.sendto(str(xProportional), (HOST, PORT))
+                        print(xProportional)
                         found = True
     if not found: 
-        sock.sendto(str((-1,-1)), (HOST, PORT))
-        print(str((-1,-1)))
+        sock.sendto(str(lastKnown), (HOST, PORT))
+        print(lastKnown)
     parsedContours = contours
     for i in clickedPoints:
         for k,v in enumerate(parsedContours[:]):
