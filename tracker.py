@@ -1,4 +1,5 @@
-from cShapeDetector import cShapeDetector #cShapeDetector is never used 
+# TODO header comments
+
 import numpy as np import cv2, time, sys, math, classifiers, argparse, 
 cCamera, socket
 
@@ -56,6 +57,7 @@ foundFrames = 0
 
 classifier = classifiers.cClassifier() #look in classifiers.py
 
+# TODO need debug/performance mode
 cv2.namedWindow('image')
 cv2.setMouseCallback('image', saveClick)
 
@@ -93,11 +95,11 @@ while(True):
     if (version == 2): contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
     else: contour_im, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
     
-    contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest)
+    contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest) - TODO killthis? is this the best proxy for interestingness?
     
     thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR) #turn it back to BGR so that when we draw things they show up in BGR
     
-    displayed = frame #make a copy of the frame  
+    displayed = frame #make a copy of the frame  # TODO kill this?
     
     found = False
     for s1 in contours:
@@ -109,7 +111,7 @@ while(True):
         for s2 in contours:
             if s1 is not s2:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
-                if s1box[1][1] == 0 or s2box[1][1] == 0: continue #is 0 a magic number?
+                if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not intereesting - is 0 a magic number?
                 if not DEBUG:
                     if classifier.classify(s1box, s2box, False): #look at classifiers.py
                         foundFrames += 1
