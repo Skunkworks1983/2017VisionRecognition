@@ -4,7 +4,7 @@ cCamera, socket
 
 HOST = '10.19.83.41' 
 HOST_RECV = ''
-PORT = 8888
+PORT = 5802
 
 '''try:'''
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
