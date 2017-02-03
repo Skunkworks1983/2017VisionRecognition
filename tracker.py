@@ -1,15 +1,18 @@
-from cShapeDetector import cShapeDetector #cShapeDetector is never used
-import numpy as np
-import cv2, time, sys, math, classifiers, argparse, cCamera, socket
+from cShapeDetector import cShapeDetector #cShapeDetector is never used 
+import numpy as np import cv2, time, sys, math, classifiers, argparse, 
+cCamera, socket
 
-HOST = 'localhost'
-PORT = 5555
+HOST = '10.19.83.41' 
+HOST_RECV = ''
+PORT = 8888
 
-try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    print('Socket created!')
-except:
+'''try:'''
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((HOST, PORT))
+print('Socket created!')
+'''except:
     print('Socket creation fail!')
+'''
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="file",
@@ -60,6 +63,7 @@ width = 0
 height = 0
 lastKnown = ""
 while(True):
+    sock.sendto("looped", (HOST, PORT))
     frameCount += 1
     # Capture frame-by-frame
     frame = cam.nextFrame()
@@ -123,11 +127,11 @@ while(True):
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
                         sock.sendto(str(xProportional), (HOST, PORT))
-                        print(xProportional)
+                        #print(xProportional)
                         found = True
     if not found: 
         sock.sendto(str(lastKnown), (HOST, PORT))
-        print(lastKnown)
+        #print(lastKnown)
     parsedContours = contours
     for i in clickedPoints:
         for k,v in enumerate(parsedContours[:]):
