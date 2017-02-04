@@ -12,22 +12,6 @@ ap.add_argument("-t", "--target", type=str, default="goal",
     help="what to detect")
 args = vars(ap.parse_args())
 
-target = args['target']
-
-try:
-    import RPi.GPIO as GPIO
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    if GPIO.input(4):
-        target = 'gear'
-        os.system('sudo hostname gear-pi')
-    else: 
-        target = 'goal'
-        os.system('sudo hostname goal-pi')
-except:
-    print('If you recieve this error on a pi, please run sudo pip install --upgrade RPi.GPIO then try again')
-    pass
-
 #Define send and receive ports for UDP communication
 HOST = '10.19.83.41' 
 HOST_RECV = ''
