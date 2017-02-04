@@ -1,59 +1,64 @@
-# TODO header comments
+# tracker.py
+# Main file that (currently) is processing camera frames and trying to find the boiler, then send that x val over UDP to the roborio
 
-import numpy as np import cv2, time, sys, math, classifiers, argparse, 
-cCamera, socket
+import numpy as np 
+import cv2, time, sys, math, classifiers, argparse, cCamera, socket
 
+#Define send and receive ports for UDP communication
 HOST = '10.19.83.41' 
 HOST_RECV = ''
 PORT = 5802
 
-'''try:'''
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((HOST, PORT))
-print('Socket created!')
-'''except:
-    print('Socket creation fail!')
-'''
+try:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((HOST, PORT))
+    print('Socket created!')
+except socket.error:
+    print("Socket creation failed (on robot network?)")
+    time.sleep(1)
 
+
+#Setup argument processing
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="file",
     help="what input type should be used")
 args = vars(ap.parse_args())
 
+#Create version constants based on the reported version
 if cv2.__version__ == "3.2.0": version = 3
 elif cv2.__version__ == "2.4.9.1": version = 2
 else: print("Unkown openCV version!")
 
+#Print out all of a np array
 np.set_printoptions(threshold=np.nan)
-    
+
+#Define test file and cam object based on argument
 fileName = "./testVideos/test8.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
 
-def doNothing(val): #necesasry for the return of createTrackbar
+#necesasry for the return of createTrackbar (literally does nothing)
+def doNothing(val): 
     pass
-    
+
+#self explanatory
 def pointInContour(pt, cnt):
     return cv2.pointPolygonTest(cnt, pt, True) > 0
-    
+
+#adds the x,y coords to an array when the mouse is clicked on the window (used for debugging)
 clickedPoints = [(0, 0)]
 def saveClick(event,x,y,flags,param):
     global clickedPoints
     if event == cv2.EVENT_LBUTTONDOWN:
         clickedPoints.append((x,y))
 
+#map [-width, width] -> [-1, 1] (so roborio doesn't have to care about window resolution)
 def map(val, width):
     return ((2*val + 0.0)/width) - 1
 
 DEBUG = False
-        
-t_val = 60 #starting threshold on the slider
-imageNum = 0
-cv2.namedWindow("trackbar", cv2.WINDOW_NORMAL)
-#cv2.resize("trackbar", (640, 480)) #Commented line?
-cv2.createTrackbar("t_val", "trackbar", t_val, 255, doNothing) #Creates a trackbar on the window "trackbar" to adjust t_val (threshold)
+HEADLESS = False #if we actually want GUI output
 
-frameCount = 0.1 #float so that we get float division
-foundFrames = 0
+imageNum = 0
 
 classifier = classifiers.cClassifier() #look in classifiers.py
 
@@ -61,33 +66,31 @@ classifier = classifiers.cClassifier() #look in classifiers.py
 cv2.namedWindow('image')
 cv2.setMouseCallback('image', saveClick)
 
+#initialize these variables
 width = 0
 height = 0
 lastKnown = ""
-while(True):
-    sock.sendto("looped", (HOST, PORT))
-    frameCount += 1
+while(True):    
     # Capture frame-by-frame
     frame = cam.nextFrame()
     
+    #if the image is not tall and skinny, flip it
+    #NOTE: Also flips over the y-axis
     if(frame.shape[1] > frame.shape[0]):
         frame = cv2.transpose(frame, frame)
     
-    
+    #resize the window and actually find the width and height
     frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)
     width, height = frame.shape[1], frame.shape[0]
         
     saved = frame.copy() #to save the image if spacebar was pressed
     
-    t_val = cv2.getTrackbarPos("t_val", "trackbar")       #Update the image and trackbar positions
     gray = frame[:,:,0]
     t_val = np.max(gray)*.90
     # Our operations on the frame come here
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) #Convert to gray, and then threshold based on t_val
     maxThresh = 255
     ret, thresholded = cv2.threshold(gray, t_val, maxThresh, cv2.THRESH_BINARY) #white if above thresh else black #comment uses wrong variable name
-    
-    #thresholded = cv2.blur(thresholded, (5,5))
     
     #thresholded = np.uint8(np.clip(gray, np.percentile(gray, t_val), 100)) could try to switch to blue-scale later
     cv2.imshow("thresholded", thresholded)
@@ -99,8 +102,6 @@ while(True):
     
     thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR) #turn it back to BGR so that when we draw things they show up in BGR
     
-    displayed = frame #make a copy of the frame  # TODO kill this?
-    
     found = False
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
@@ -111,10 +112,9 @@ while(True):
         for s2 in contours:
             if s1 is not s2:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
-                if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not intereesting - is 0 a magic number?
+                if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not interesting (and break when you divide by width)
                 if not DEBUG:
                     if classifier.classify(s1box, s2box, False): #look at classifiers.py
-                        foundFrames += 1
                 
                         if (version == 2):
                             s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
@@ -122,14 +122,12 @@ while(True):
                         else:
                             s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
                             s2rot = np.int0(cv2.boxPoints(s2box))
-                        cv2.drawContours(displayed, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
-                        cv2.drawContours(displayed, [s2rot], 0, (0, 0, 255), 2)
-                        cv2.line(displayed, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
-                        #print(str(-1*(width/2.0)) + ", " + str(int(s1box[0][0])))
+                        cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
+                        cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
+                        cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
                         sock.sendto(str(xProportional), (HOST, PORT))
-                        #print(xProportional)
                         found = True
     if not found: 
         sock.sendto(str(lastKnown), (HOST, PORT))
@@ -138,13 +136,13 @@ while(True):
     for i in clickedPoints:
         for k,v in enumerate(parsedContours[:]):
             if(pointInContour(i, v)):
-                cv2.drawContours(displayed, [v], -1, (255, 0, 0), 1)
+                cv2.drawContours(frame, [v], -1, (255, 0, 0), 1)
                 del parsedContours[k]
                 
-    cv2.drawContours(displayed, parsedContours, -1, (0, 255, 0), 1)
+    cv2.drawContours(frame, parsedContours, -1, (0, 255, 0), 1)
     # Display the resulting frame
     
-    cv2.imshow('image', displayed)
+    cv2.imshow('image', frame)
     if cv2.waitKey(1) & 0xFF == ord(' '):
         cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
         imageNum = imageNum + 1
