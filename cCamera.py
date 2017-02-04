@@ -1,3 +1,5 @@
+# TODO header comments
+
 import cv2, argparse
 try: import picamera, picamera.array
 except: pass
@@ -28,7 +30,7 @@ class cCamera:
 
     def nextFrame(self):
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI"):
-            with picamera.PiCamera() as self.camera:
+            with picamera.PiCamera() as self.camera:  # TODO look at cacheing this as with cap
                 with picamera.array.PiRGBArray(self.camera) as self.stream:
                     self.camera.capture(self.stream, 'bgr', use_video_port=True)
                     frame = self.stream.array

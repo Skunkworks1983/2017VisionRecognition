@@ -1,9 +1,9 @@
 # TODO header comments
 
-import numpy as np import cv2, time, sys, math, classifiers, argparse, 
-cCamera, socket
+import numpy as np 
+import cv2, time, sys, math, classifiers, argparse, cCamera, socket, imutils
 
-HOST = '10.19.83.41' 
+HOST = 'localhost' 
 HOST_RECV = ''
 PORT = 5802
 
@@ -18,6 +18,8 @@ print('Socket created!')
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="file",
     help="what input type should be used")
+ap.add_argument("-t", "--target", type=str, default="goal",
+    help="what to detect")
 args = vars(ap.parse_args())
 
 if cv2.__version__ == "3.2.0": version = 3
@@ -26,7 +28,7 @@ else: print("Unkown openCV version!")
 
 np.set_printoptions(threshold=np.nan)
     
-fileName = "./testVideos/test8.h264" #file of the video to load
+fileName = "./testPhotos/test11.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
 
 def doNothing(val): #necesasry for the return of createTrackbar
@@ -68,11 +70,12 @@ while(True):
     sock.sendto("looped", (HOST, PORT))
     frameCount += 1
     # Capture frame-by-frame
-    frame = cam.nextFrame()
+    frame = cam.nextFrame() 
     
     if(frame.shape[1] > frame.shape[0]):
         frame = cv2.transpose(frame, frame)
     
+    #frame = imutils.rotate_bound(frame, 90)
     
     frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)
     width, height = frame.shape[1], frame.shape[0]
@@ -113,7 +116,7 @@ while(True):
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
                 if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not intereesting - is 0 a magic number?
                 if not DEBUG:
-                    if classifier.classify(s1box, s2box, False): #look at classifiers.py
+                    if classifier.classify(s1box, s2box, False, args["target"]): #look at classifiers.py
                         foundFrames += 1
                 
                         if (version == 2):
