@@ -22,6 +22,8 @@ except socket.error:
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="file",
     help="what input type should be used")
+ap.add_argument("-t", "--target", type=str, default="goal",
+    help="what to detect")
 args = vars(ap.parse_args())
 
 #Create version constants based on the reported version
@@ -72,7 +74,7 @@ height = 0
 lastKnown = ""
 while(True):    
     # Capture frame-by-frame
-    frame = cam.nextFrame()
+    frame = cam.nextFrame() 
     
     #if the image is not tall and skinny, flip it
     #NOTE: Also flips over the y-axis
@@ -114,7 +116,7 @@ while(True):
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
                 if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not interesting (and break when you divide by width)
                 if not DEBUG:
-                    if classifier.classify(s1box, s2box, False): #look at classifiers.py
+                    if classifier.classify(s1box, s2box, False, args["target"]): #look at classifiers.py
                 
                         if (version == 2):
                             s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
