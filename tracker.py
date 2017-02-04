@@ -2,7 +2,31 @@
 # Main file that (currently) is processing camera frames and trying to find the boiler, then send that x val over UDP to the roborio
 
 import numpy as np 
-import cv2, time, sys, math, classifiers, argparse, cCamera, socket
+import cv2, time, sys, math, classifiers, argparse, cCamera, socket, os
+
+#Setup argument processing
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--inputType", type=str, default="pi",
+    help="what input type should be used")
+ap.add_argument("-t", "--target", type=str, default="goal",
+    help="what to detect")
+args = vars(ap.parse_args())
+
+target = args['target']
+
+try:
+    import RPi.GPIO as GPIO
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    if GPIO.input(4):
+        target = 'gear'
+        os.system('sudo hostname gear-pi')
+    else: 
+        target = 'goal'
+        os.system('sudo hostname goal-pi')
+except:
+    print('If you recieve this error on a pi, please run sudo pip install --upgrade RPi.GPIO then try again')
+    pass
 
 #Define send and receive ports for UDP communication
 HOST = '10.19.83.41' 
@@ -17,26 +41,13 @@ except socket.error:
     print("Socket creation failed (on robot network?)")
     time.sleep(1)
 
-
-#Setup argument processing
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--inputType", type=str, default="file",
-    help="what input type should be used")
-ap.add_argument("-t", "--target", type=str, default="goal",
-    help="what to detect")
-args = vars(ap.parse_args())
-
-#Create version constants based on the reported version
-if cv2.__version__ == "3.2.0": version = 3
-elif cv2.__version__ == "2.4.9.1": version = 2
-else: print("Unkown openCV version!")
-
 #Print out all of a np array
 np.set_printoptions(threshold=np.nan)
 
 #Define test file and cam object based on argument
-fileName = "./testVideos/test8.h264" #file of the video to load
+fileName = "./testPhotos/test8.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
+version = cam.getSysInfo()
 
 #necesasry for the return of createTrackbar (literally does nothing)
 def doNothing(val): 
