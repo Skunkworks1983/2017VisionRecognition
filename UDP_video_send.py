@@ -26,6 +26,7 @@ print(frame.shape[0])
 while(True):
     frame = cam.nextFrame()
     frame = cv2.resize(frame, (0,0), fx=0.1, fy=0.1)
+    frame = frame[:,:,0]
     cv2.imshow('sent image', frame)
     frameStr = cv2.imencode('.jpg', frame)[1].tostring()
     print(len(frameStr))

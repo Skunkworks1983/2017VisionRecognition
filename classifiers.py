@@ -4,8 +4,8 @@ import math
 
 class cClassifier():
     def __init__(self):
-        self.gearClassifiers = [matchingRotation, gearAreaRatio, gearBetweenHeightRatio, minArea] #set the function names of classifiers to use here
-        self.GEAR_SIGMAS = [10, .5, 100, 300] #Constants of where the sigmas start
+        self.gearClassifiers = [matchingRotation, gearAreaRatio, gearBetweenHeightRatio] #set the function names of classifiers to use here
+        self.GEAR_SIGMAS = [500, 150, 2000] #Constants of where the sigmas start
         self.goalClassifiers = [matchingRotation, goalAreaRatio, goalBetweenHeightRatio] #set the function names of classifiers to use here
         self.GOAL_SIGMAS = [10, 1, 100] #Constants of where the sigmas start
     def classify(self, s1, s2, DEBUG, target): #returns true if it matches all of the classifiers, false if it fails any of them
@@ -26,8 +26,8 @@ class cClassifier():
             return True
         else:
             values = []
-            for k, v in enumerate(self.classifiers):
-                values.append(v(s1, s2, self.SIGMAS[k], True))
+            for k, v in enumerate(classifiers):
+                values.append(v(s1, s2, SIGMAS[k], True))
             return values
 
 def matchingRotation(s1, s2, sigma, getVal):
@@ -60,16 +60,6 @@ def goalBetweenHeightRatio(s1, s2, sigma, getVal):
         return betweenHeightRatio < maxRatio and betweenHeightRatio > minRatio
     else:
         return betweenHeightRatio
-        
-def goalCentersToTopRatio(s1, s2, sigma, getVal):
-    heightSigma = sigma
-    centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
-    ratioToTop = centerDistance/s1[1][1]
-    ratioToBottom = centerDistance/s2[1][1]
-    if not getVal:
-        return ratioToTop < 1.25 + heightSigma and ratioToTop > 1.25 - heightSigma
-    else:
-        return ratioToTop
            
 def minArea(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
@@ -91,7 +81,7 @@ def gearBetweenHeightRatio(s1, s2, sigma, getVal):
     centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
     betweenHeightRatio = centerDistance - (0.5*(s2[1][1]+s1[1][1]))/s1[1][1]
     maxRatio = 300
-    minRatio = 100
+    minRatio = 50
     if not getVal:
         return betweenHeightRatio < maxRatio and betweenHeightRatio > minRatio
     else:
