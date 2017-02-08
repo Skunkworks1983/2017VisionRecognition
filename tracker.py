@@ -5,36 +5,10 @@ from __future__ import division #IMPORTANT: Float division will work as intended
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, socket, os
 
-#Setup argument processing
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--inputType", type=str, default="pi",
-    help="what input type should be used")
-ap.add_argument("-t", "--target", type=str, default="goal",
-    help="what to detect")
-args = vars(ap.parse_args())
-
-current_milli_time = lambda: int(round(time.time() * 1000)) #quick and dirty function to get milliseconds from the time module
-
-#Define send and receive ports for UDP communication
-HOST = '10.19.83.41' 
-HOST_RECV = ''
-PORT = 5802
-
-try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((HOST, PORT))
-    print('Socket created!')
-except socket.error:
-    print("Socket creation failed (on robot network?)")
-    time.sleep(1)
-
-#Print out all of a np array
-np.set_printoptions(threshold=np.nan)
-
-#Define test file and cam object based on argument
-fileName = "./testPhotos/test8.h264" #file of the video to load
-cam = cCamera.cCamera(args["inputType"], fileName)
-version = cam.getSysInfo()
+#####     CONSTANT DEFS     #####
+HEADLESS = False #if we actually want GUI output
+DEBUG = False
+#################################
 
 #necesasry for the return of createTrackbar (literally does nothing)
 def doNothing(val): 
@@ -51,31 +25,64 @@ def saveClick(event,x,y,flags,param):
     if event == cv2.EVENT_LBUTTONDOWN:
         clickedPoints.append((x,y))
 
-#map [-width, width] -> [-1, 1] (so roborio doesn't have to care about window resolution)
+#map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
 def map(val, width):
     return ((2*val + 0.0)/width) - 1
 
-DEBUG = False
-HEADLESS = False #if we actually want GUI output
+#quick and dirty function to get milliseconds from the time module
+current_milli_time = lambda: int(round(time.time() * 1000))
 
-imageNum = 0
+#####      ARG PARSING      #####
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--inputType", type=str, default="pi",
+    help="what input type should be used")
+ap.add_argument("-t", "--target", type=str, default="goal",
+    help="what to detect")
+args = vars(ap.parse_args())
+#################################
 
-classifier = classifiers.cClassifier() #look in classifiers.py
+##### SOCKET INITIALIZATION #####
+HOST = '10.19.83.41' 
+HOST_RECV = ''
+PORT = 5802
 
-# TODO need debug/performance mode
+try:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((HOST, PORT))
+    print('Socket created!')
+except socket.error:
+    print("Socket creation failed (on robot network?)")
+    time.sleep(1)
+#################################
+
+##### CAMERA INITIALIZATION #####
+#Define test file and cam object based on argument
+fileName = "./testVideos/test8.h264" #file of the video to load
+cam = cCamera.cCamera(args["inputType"], fileName)
+version = cam.getSysInfo()
+#################################
+
+classifier = classifiers.cClassifier()
+
 if not HEADLESS:
     cv2.namedWindow('image')
     cv2.setMouseCallback('image', saveClick)
 
-#initialize these variables
-width = 0
-height = 0
+#various variables that are counters or placeholders for later
 lastKnown = ""
+imageNum = 0
 
+#list of ms it took to iterate through (for fps management)
 times = []
 
+#Print out all of a np array (only matters if we're in debug mode)
+if DEBUG:
+    np.set_printoptions(threshold=np.nan)
+
 while(True):
+    #Get time start (for fps management)
     t0 = current_milli_time()
+
     # Capture frame-by-frame
     frame = cam.nextFrame() 
     
@@ -113,10 +120,6 @@ while(True):
     found = False
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
-        #long and skinny?
-        '''if s1box[1][0] == 0 or float(s1box[1][1]) / s1box[1][0] < 1:
-            print("Not long and skinny")
-            continue'''
         for s2 in contours:
             if s1 is not s2:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
@@ -139,18 +142,18 @@ while(True):
                         sock.sendto(str(xProportional), (HOST, PORT))
                         print("Found: " + str(xProportional))
                         found = True
+
     if not found: 
         sock.sendto(str(lastKnown), (HOST, PORT))
         print("Last:  " + str(lastKnown))
-    parsedContours = contours
-    for i in clickedPoints:
-        for k,v in enumerate(parsedContours[:]):
-            if(pointInContour(i, v)):
-                if not HEADLESS: cv2.drawContours(frame, [v], -1, (255, 0, 0), 1)
-                del parsedContours[k]
-                
-    if not HEADLESS: cv2.drawContours(frame, parsedContours, -1, (0, 255, 0), 1)
-    # Display the resulting frame
+
+    if not HEADLESS:
+        parsedContours = contours
+        for i in clickedPoints:
+            for k,v in enumerate(parsedContours[:]):
+                if(pointInContour(i, v)):
+                    cv2.drawContours(frame, [v], -1, (255, 0, 0), 1)
+                    del parsedContours[k]
     
     t1 = current_milli_time()
     
