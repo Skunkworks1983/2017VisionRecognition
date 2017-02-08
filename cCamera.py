@@ -11,9 +11,9 @@ class cCamera:
         self.filename = filename
         
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
-            with picamera.PiCamera() as self.camera:
-                with picamera.array.PiRGBArray(self.camera) as self.stream:
-                    self.camera.resolution = (320, 240)
+            self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
+            self.stream = picamera.array.PiRGBArray(self.camera)
+            self.camera.resolution = (320, 240)
                     
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             self.cap = cv2.VideoCapture(self.filename)
@@ -30,13 +30,11 @@ class cCamera:
 
     def nextFrame(self):
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI"):
-            with picamera.PiCamera() as self.camera:  # TODO look at cacheing this as with cap
-                with picamera.array.PiRGBArray(self.camera) as self.stream:
-                    self.camera.capture(self.stream, 'bgr', use_video_port=True)
-                    frame = self.stream.array
-                    self.stream.seek(0)
-                    self.stream.truncate()
-                    return frame
+            self.camera.capture(self.stream, 'bgr', use_video_port=True)
+            frame = self.stream.array
+            self.stream.seek(0)
+            self.stream.truncate()
+            return frame
                 
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             if not self.cap.grab(): #if the video has run out of frames
