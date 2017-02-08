@@ -1,6 +1,7 @@
 # tracker.py
 # Main file that (currently) is processing camera frames and trying to find the boiler, then send that x val over UDP to the roborio
 
+from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, socket, os
 
@@ -11,6 +12,8 @@ ap.add_argument("-i", "--inputType", type=str, default="pi",
 ap.add_argument("-t", "--target", type=str, default="goal",
     help="what to detect")
 args = vars(ap.parse_args())
+
+current_milli_time = lambda: int(round(time.time() * 1000)) #quick and dirty function to get milliseconds from the time module
 
 #Define send and receive ports for UDP communication
 HOST = '10.19.83.41' 
@@ -60,14 +63,19 @@ imageNum = 0
 classifier = classifiers.cClassifier() #look in classifiers.py
 
 # TODO need debug/performance mode
-cv2.namedWindow('image')
-cv2.setMouseCallback('image', saveClick)
+if not HEADLESS:
+    cv2.namedWindow('image')
+    cv2.setMouseCallback('image', saveClick)
 
 #initialize these variables
 width = 0
 height = 0
 lastKnown = ""
-while(True):    
+
+times = []
+
+while(True):
+    t0 = current_milli_time()
     # Capture frame-by-frame
     frame = cam.nextFrame() 
     
@@ -90,14 +98,17 @@ while(True):
     ret, thresholded = cv2.threshold(gray, t_val, maxThresh, cv2.THRESH_BINARY) #white if above thresh else black #comment uses wrong variable name
     
     #thresholded = np.uint8(np.clip(gray, np.percentile(gray, t_val), 100)) could try to switch to blue-scale later
-    cv2.imshow("thresholded", thresholded)
+    if not HEADLESS: cv2.imshow("thresholded", thresholded)
 
-    if (version == 2): contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
-    else: contour_im, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
+    if (version == 2): 
+        contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
+    else: 
+        contour_im, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
     
     contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest) - TODO killthis? is this the best proxy for interestingness?
     
-    thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR) #turn it back to BGR so that when we draw things they show up in BGR
+    if not HEADLESS:
+        thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR) #turn it back to BGR so that when we draw things they show up in BGR        
     
     found = False
     for s1 in contours:
@@ -119,27 +130,39 @@ while(True):
                         else:
                             s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
                             s2rot = np.int0(cv2.boxPoints(s2box))
-                        cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
-                        cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
-                        cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
+                        if not HEADLESS:
+                            cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
+                            cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
+                            cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
                         sock.sendto(str(xProportional), (HOST, PORT))
+                        print("Found: " + str(xProportional))
                         found = True
     if not found: 
         sock.sendto(str(lastKnown), (HOST, PORT))
-        #print(lastKnown)
+        print("Last:  " + str(lastKnown))
     parsedContours = contours
     for i in clickedPoints:
         for k,v in enumerate(parsedContours[:]):
             if(pointInContour(i, v)):
-                cv2.drawContours(frame, [v], -1, (255, 0, 0), 1)
+                if not HEADLESS: cv2.drawContours(frame, [v], -1, (255, 0, 0), 1)
                 del parsedContours[k]
                 
-    cv2.drawContours(frame, parsedContours, -1, (0, 255, 0), 1)
+    if not HEADLESS: cv2.drawContours(frame, parsedContours, -1, (0, 255, 0), 1)
     # Display the resulting frame
     
-    cv2.imshow('image', frame)
+    t1 = current_milli_time()
+    
+    tD = t1 - t0
+    times.append(tD)
+    times = times[-20:]
+    avgMsPerFrame = sum(times)/len(times)
+    sPerFrame = avgMsPerFrame / 1000
+    fps = 1 / sPerFrame
+    print("FPS: " + str(fps))
+    
+    if not HEADLESS: cv2.imshow('image', frame)
     if cv2.waitKey(1) & 0xFF == ord(' '):
         cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
         imageNum = imageNum + 1
