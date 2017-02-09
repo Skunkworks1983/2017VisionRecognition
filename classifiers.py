@@ -38,7 +38,11 @@ def matchingRotation(s1, s2, sigma, getVal):
         return s1[2]/(s2[2] + .001)
             
 def distance(x1, y1, x2, y2):
-    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    if not distance == 0: return distance
+    else: 
+        print 'Distance is zero!'
+        return -1
     
 def goalAreaRatio(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
