@@ -57,7 +57,7 @@ except socket.error:
 
 ##### CAMERA INITIALIZATION #####
 #Define test file and cam object based on argument
-fileName = "./testVideos/test8.h264" #file of the video to load
+fileName = "./test16.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
 version = cam.getSysInfo()
 #################################
