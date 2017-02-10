@@ -7,7 +7,7 @@ class cClassifier():
         self.gearClassifiers = [matchingRotation, gearAreaRatio, gearBetweenHeightRatio] #set the function names of classifiers to use here
         self.GEAR_SIGMAS = [500, 150, 2000] #Constants of where the sigmas start
         self.goalClassifiers = [matchingRotation, goalAreaRatio, goalBetweenHeightRatio] #set the function names of classifiers to use here
-        self.GOAL_SIGMAS = [10, 1, 100] #Constants of where the sigmas start
+        self.GOAL_SIGMAS = [10, 1, 10] #Constants of where the sigmas start
     def classify(self, s1, s2, DEBUG, target): #returns true if it matches all of the classifiers, false if it fails any of them
         if target == "goal" or target == "turret":
             classifiers = self.goalClassifiers
@@ -77,11 +77,11 @@ def gearAreaRatio(s1, s2, sigma, getVal):
         return areaRatio
 
 def gearBetweenHeightRatio(s1, s2, sigma, getVal):
-    betweenHeightSigma = sigma
+    betweenHeightSigma = sigma #TODO: Use this somehow
     centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
     betweenHeightRatio = centerDistance - (0.5*(s2[1][1]+s1[1][1]))/s1[1][1]
-    maxRatio = 300
-    minRatio = 50
+    maxRatio = 3
+    minRatio = 0.5
     if not getVal:
         return betweenHeightRatio < maxRatio and betweenHeightRatio > minRatio
     else:

@@ -3,7 +3,7 @@
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
-import cv2, time, sys, math, classifiers, argparse, cCamera, socket, os
+import cv2, time, sys, math, classifiers, argparse, cCamera, os, riosocket, socket #socket only included for the error
 
 #####     CONSTANT DEFS     #####
 HEADLESS = False #if we actually want GUI output
@@ -42,13 +42,8 @@ args = vars(ap.parse_args())
 #################################
 
 ##### SOCKET INITIALIZATION #####
-HOST = '10.19.83.41' 
-HOST_RECV = ''
-PORT = 5802
-
 try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((HOST, PORT))
+    riosocket = riosocket.RioSocket()
     print('Socket created!')
 except socket.error:
     print("Socket creation failed (on robot network?)")
@@ -139,12 +134,20 @@ while(True):
                             cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
-                        sock.sendto(str(xProportional), (HOST, PORT))
+                        if args["target"] == "goal":
+                            riosocket.send("goal", str(xProportional))
+                        else:
+                            riosocket.send("gear", str(xProportional))
                         print("Found: " + str(xProportional))
                         found = True
+                else:
+                    print(classifier.classify(s1box, s2box, True, args["target"]))
 
     if not found: 
-        sock.sendto(str(lastKnown), (HOST, PORT))
+        if args["target"] == "goal":
+            riosocket.send("goal", str(lastKnown))
+        else:
+            riosocket.send("gear", str(lastKnown))
         print("Last:  " + str(lastKnown))
 
     if not HEADLESS:
