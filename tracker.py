@@ -128,7 +128,7 @@ while(True):
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
         for s2 in contours:
-            if s1 is not s2:
+            if s1 is not s2 and not found:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
                 if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not interesting (and break when you divide by width)
                 if not DEBUG:

@@ -13,7 +13,7 @@ class cCamera:
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
             self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
             self.stream = picamera.array.PiRGBArray(self.camera)
-            self.camera.resolution = (320, 240)
+            self.camera.resolution = (1280, 960)
                     
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             self.cap = cv2.VideoCapture(self.filename)
@@ -34,6 +34,7 @@ class cCamera:
             frame = self.stream.array
             self.stream.seek(0)
             self.stream.truncate()
+            frame = frame[20:960, 0:1200]
             return frame
                 
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
