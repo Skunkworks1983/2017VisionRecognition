@@ -1,5 +1,6 @@
 
 *.pyc
-*.h264
 
-testPhotos/
+
+/testPhotos
+\testPhotos
