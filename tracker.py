@@ -87,13 +87,13 @@ while(True):
         frame = cv2.transpose(frame, frame)
     
     #resize the window and actually find the width and height
-    frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)
+    '''frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)'''
     width, height = frame.shape[1], frame.shape[0]
         
     saved = frame.copy() #to save the image if spacebar was pressed
     
     gray = frame[:,:,0]
-    t_val = np.max(gray)*.90
+    t_val = np.max(gray)*.95
     # Our operations on the frame come here
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) #Convert to gray, and then threshold based on t_val
     maxThresh = 255
