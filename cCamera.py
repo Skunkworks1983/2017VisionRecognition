@@ -23,8 +23,8 @@ class cCamera:
             self.cap = cv2.VideoCapture(0)
 
         # Define the codec and create VideoWriter object
-        framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something.
-        out = cv2.VideoWriter(self.videoName + '.h264',CV_FOURCC('H','2','6','4'), framerate, self.camera.resolution)
+        framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something
+        out = cv2.VideoWriter(self.videoName + '.h264', cv2.cv.CV_FOURCC('H', '2', '6', '4'), framerate, self.camera.resolution)
 
     def getSysInfo(self):
         if cv2.__version__ == "3.2.0": version = 3
