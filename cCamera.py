@@ -5,10 +5,11 @@ try: import picamera, picamera.array
 except: pass
 
 class cCamera:
-    def __init__(self, inputType, filename):
+    def __init__(self, inputType, filename, videoName):
 
         self.inputType = inputType
         self.filename = filename
+        self.videoName = videoName
         
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
             self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
@@ -21,6 +22,11 @@ class cCamera:
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             self.cap = cv2.VideoCapture(0)
 
+        # Define the codec and create VideoWriter object
+        framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something.
+        fourcc = cv2.VideoWriter_fourcc(*'H264')
+        out = cv2.VideoWriter(self.videoName + '.h264',fourcc, framerate, self.camera.resolution)
+
     def getSysInfo(self):
         if cv2.__version__ == "3.2.0": version = 3
         elif cv2.__version__ == "2.4.9.1": version = 2
@@ -28,6 +34,9 @@ class cCamera:
         
         return version
 
+    def writeVideo(self, frame):
+        out.write(frame)
+        
     def nextFrame(self):
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI"):
             self.camera.capture(self.stream, 'bgr', use_video_port=True)

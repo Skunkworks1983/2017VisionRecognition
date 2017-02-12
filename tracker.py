@@ -34,6 +34,8 @@ ap.add_argument("-t", "--target", type=str, default="goal",
     help="what to detect")
 ap.add_argument("-m", "--minT_val", type=int, default="230",
     help="how hard to threshold")
+ap.add_argument("-v", "--videoName", type=str, default="no",
+    help="name of video (input nothing to not save video)")
 ap.add_argument("-d", "--DEBUG", type=bool, default="False",
     help="whether to output debug vals")
 ap.add_argument("-h", "--HEADLESS", type=bool, default="False",
@@ -42,6 +44,7 @@ args = vars(ap.parse_args())
 args['inputType'] = inputType # I got annoyed typing args['theThingIActuallyWant'] over and over
 args['target'] = target
 args['minT_val'] = minT_val
+args['videoName'] = videoName
 args['DEBUG'] = DEBUG
 args['HEADLESS'] = HEADLESS
 #################################
@@ -63,7 +66,7 @@ except socket.error:
 ##### CAMERA INITIALIZATION #####
 #Define test file and cam object based on argument
 fileName = "./test16.h264" #file of the video to load
-cam = cCamera.cCamera(inputType, fileName)
+cam = cCamera.cCamera(inputType, fileName, videoName)
 version = cam.getSysInfo()
 #################################
 
@@ -90,7 +93,8 @@ while(True):
     t0 = current_milli_time()
 
     # Capture frame-by-frame
-    frame = cam.nextFrame() 
+    frame = cam.nextFrame()
+    if saveName is not 'no': cam.writeVideo(frame)
     
     #if the image is not tall, skinny, and is a goal cam flip it
     #NOTE: Also flips over the y-axis
