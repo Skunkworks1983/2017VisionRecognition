@@ -32,21 +32,21 @@ ap.add_argument("-i", "--inputType", type=str, default="pi",
     help="what input type should be used")
 ap.add_argument("-t", "--target", type=str, default='goal',
     help="what to detect")
-ap.add_argument("-m", "--minT_val", type=int, default="230",
+ap.add_argument("-m", "--minT_val", type=int, default=230,
     help="how hard to threshold")
 ap.add_argument("-v", "--videoName", type=str, default="no",
     help="name of video (input nothing to not save video)")
-ap.add_argument("-d", "--DEBUG", type=bool, default="False",
+ap.add_argument("-d", "--DEBUG", type=bool, default=False,
     help="whether to output debug vals")
-ap.add_argument("-h", "--HEADLESS", type=bool, default="False",
+ap.add_argument("-e", "--HEADLESS", type=bool, default=False,
     help="whether to display images")
 args = vars(ap.parse_args())
-args['inputType'] = inputType # I got annoyed typing args['theThingIActuallyWant'] over and over
-args['target'] = target
-args['minT_val'] = minT_val
-args['videoName'] = videoName
-args['DEBUG'] = DEBUG
-args['HEADLESS'] = HEADLESS
+inputType = args['inputType'] # I got annoyed typing theThingIActuallyWant'] over and over
+target = args['target']
+minT_val = args['minT_val']
+videoName = args['videoName']
+DEBUG = args['DEBUG']
+HEADLESS = args['HEADLESS']
 if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear': target = socket.gethostname()[:-3]
 #################################
 
