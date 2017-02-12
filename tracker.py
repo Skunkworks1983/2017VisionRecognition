@@ -1,19 +1,12 @@
 # tracker.py
 # Main file that (currently) is processing camera frames and trying to find the boiler, then send that x val over UDP to the roborio
+# NOTE: I moved the headless, debug, and minT_val modifiers to arg parse
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
-import cv2, time, sys, math, classifiers, argparse, cCamera, os, riosocket, socket #socket only included for the error
+import cv2, time, sys, math, classifiers, argparse, cCamera, socket, os
 
-#####     CONSTANT DEFS     #####
-HEADLESS = False #if we actually want GUI output
-DEBUG = False
-#################################
-
-#necesasry for the return of createTrackbar (literally does nothing)
-def doNothing(val): 
-    pass
-
+#####       FUNCTIONS       #####
 #self explanatory
 def pointInContour(pt, cnt):
     return cv2.pointPolygonTest(cnt, pt, True) > 0
@@ -31,6 +24,7 @@ def map(val, width):
 
 #quick and dirty function to get milliseconds from the time module
 current_milli_time = lambda: int(round(time.time() * 1000))
+#################################
 
 #####      ARG PARSING      #####
 ap = argparse.ArgumentParser()
@@ -38,12 +32,28 @@ ap.add_argument("-i", "--inputType", type=str, default="pi",
     help="what input type should be used")
 ap.add_argument("-t", "--target", type=str, default="goal",
     help="what to detect")
+ap.add_argument("-m", "--minT_val", type=int, default="230",
+    help="how hard to threshold")
+ap.add_argument("-d", "--DEBUG", type=bool, default="False",
+    help="whether to output debug vals")
+ap.add_argument("-h", "--HEADLESS", type=bool, default="False",
+    help="whether to display images")
 args = vars(ap.parse_args())
+args['inputType'] = inputType # I got annoyed typing args['theThingIActuallyWant'] over and over
+args['target'] = target
+args['minT_val'] = minT_val
+args['DEBUG'] = DEBUG
+args['HEADLESS'] = HEADLESS
 #################################
 
 ##### SOCKET INITIALIZATION #####
+HOST = '10.19.83.41'
+HOST_RECV = ''
+PORT = 5802
+
 try:
-    riosocket = riosocket.RioSocket()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((HOST, PORT))
     print('Socket created!')
 except socket.error:
     print("Socket creation failed (on robot network?)")
@@ -53,10 +63,11 @@ except socket.error:
 ##### CAMERA INITIALIZATION #####
 #Define test file and cam object based on argument
 fileName = "./test16.h264" #file of the video to load
-cam = cCamera.cCamera(args["inputType"], fileName)
+cam = cCamera.cCamera(inputType, fileName)
 version = cam.getSysInfo()
 #################################
 
+## MAIN CODE (HERE BE DRAGONS) ##
 classifier = classifiers.cClassifier()
 
 if not HEADLESS:
@@ -81,21 +92,23 @@ while(True):
     # Capture frame-by-frame
     frame = cam.nextFrame() 
     
-    #if the image is not tall and skinny, flip it
+    #if the image is not tall, skinny, and is a goal cam flip it
     #NOTE: Also flips over the y-axis
-    if(frame.shape[1] > frame.shape[0]):
+    if(frame.shape[1] > frame.shape[0] and target is 'goal'):
         frame = cv2.transpose(frame, frame)
     
     #resize the window and actually find the width and height
-    '''frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)'''
+    frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)
     width, height = frame.shape[1], frame.shape[0]
-        
-    saved = frame.copy() #to save the image if spacebar was pressed
+       
+    #Copying mats seems heavy on the drive if we're going to be trying to save video
+    if DEBUG: saved = frame.copy() #to save the image if spacebar was pressed 
     
     gray = frame[:,:,0]
     t_val = np.max(gray)*.90
-    if t_val < 230: t_val = 230
+    if t_val < minT_val: t_val = minT_val
     else: pass
+    
     # Our operations on the frame come here
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) #Convert to gray, and then threshold based on t_val
     maxThresh = 255
@@ -118,46 +131,40 @@ while(True):
     
     found = False
     
-    if len(contours) > 10: continue
+    if len(contours) > 10: 
+        if DEBUG: print 'To many contours to process'
+        continue
     
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
         for s2 in contours:
             if s1 is not s2 and not found:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
-                if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not interesting (and break when you divide by width)
+                if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not interesting (and skip if you have to divide by width)
                 if not DEBUG:
-                    if classifier.classify(s1box, s2box, False, args["target"]): #look at classifiers.py
-                
-                        if (version == 2):
-                            s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
-                            s2rot = np.int0(cv2.cv.BoxPoints(s2box))
-                        else:
-                            s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
-                            s2rot = np.int0(cv2.boxPoints(s2box))
+                    if classifier.classify(s1box, s2box, DEBUG, target): #look at classifiers.py
                         if not HEADLESS:
-                            print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
-                            if (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]) > 1: print 'To the left'
-                            else: print 'To the right '
+                            if (version == 2):
+                                s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
+                                s2rot = np.int0(cv2.cv.BoxPoints(s2box))
+                            else:
+                                s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
+                                s2rot = np.int0(cv2.boxPoints(s2box))
+                                
                             cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                             cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
                             cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
+                        if DEBUG: print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
+                        if (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1] and DEBUG) > 1: print 'To the left'
+                        elif DEBUG: print 'To the right '
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
-                        if args["target"] == "goal":
-                            riosocket.send("goal", str(xProportional))
-                        else:
-                            riosocket.send("gear", str(xProportional))
+                        sock.sendto(str(xProportional), (HOST, PORT))
                         print("Found: " + str(xProportional))
                         found = True
-                else:
-                    print(classifier.classify(s1box, s2box, True, args["target"]))
 
     if not found: 
-        if args["target"] == "goal":
-            riosocket.send("goal", str(lastKnown))
-        else:
-            riosocket.send("gear", str(lastKnown))
+        sock.sendto(str(lastKnown), (HOST, PORT))
         print("Last:  " + str(lastKnown))
 
     if not HEADLESS:
@@ -179,7 +186,7 @@ while(True):
     print("FPS: " + str(fps))
     
     if not HEADLESS: cv2.imshow('image', frame)
-    if cv2.waitKey(1) & 0xFF == ord(' '):
+    if cv2.waitKey(1) & 0xFF == ord(' ') and DEBUG:
         cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
         imageNum = imageNum + 1
     elif cv2.waitKey(1) & 0xFF == ord('c'):

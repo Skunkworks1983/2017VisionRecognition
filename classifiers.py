@@ -16,7 +16,8 @@ class cClassifier():
             classifiers = self.gearClassifiers
             SIGMAS = self.GEAR_SIGMAS
         passFail = []
-        if not DEBUG:
+        #if not DEBUG:
+        if True: #What even is this?
             for k, v in enumerate(classifiers):
                 if not v(s1, s2, SIGMAS[k], False): #call the respective function
                     passFail.append(False)
@@ -68,7 +69,7 @@ def goalBetweenHeightRatio(s1, s2, sigma, getVal):
 def minAreaDiff(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
     area2 = s2[1][0]*s2[1][1]
-    print 'Area diff: ' + str(area1 - area2)
+    if DEBUG: print 'Area diff: ' + str(area1 - area2)
     return area1 - area2 < sigma and area1 - area2 > 0 - sigma
     
 def gearAreaRatio(s1, s2, sigma, getVal):
@@ -86,7 +87,7 @@ def gearBetweenHeightRatio(s1, s2, sigma, getVal):
     betweenHeightRatio = 0.5*(s2[1][1]+s1[1][1])/centerDistance
     maxRatio = 1
     minRatio = .1
-    print 'Height ratio: ' + str(betweenHeightRatio)
+    if DEBUG: print 'Height ratio: ' + str(betweenHeightRatio)
     if betweenHeightRatio < maxRatio and betweenHeightRatio > - maxRatio and (betweenHeightRatio > minRatio or betweenHeightRatio < - minRatio):
         
         return True
