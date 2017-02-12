@@ -52,7 +52,7 @@ except socket.error:
 
 ##### CAMERA INITIALIZATION #####
 #Define test file and cam object based on argument
-fileName = "./testVideos/test8.h264" #file of the video to load
+fileName = "./test16.h264" #file of the video to load
 cam = cCamera.cCamera(args["inputType"], fileName)
 version = cam.getSysInfo()
 #################################
@@ -93,11 +93,15 @@ while(True):
     saved = frame.copy() #to save the image if spacebar was pressed
     
     gray = frame[:,:,0]
-    t_val = np.max(gray)*.95
+    t_val = np.max(gray)*.90
+    if t_val < 230: t_val = 230
+    else: pass
     # Our operations on the frame come here
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) #Convert to gray, and then threshold based on t_val
     maxThresh = 255
     ret, thresholded = cv2.threshold(gray, t_val, maxThresh, cv2.THRESH_BINARY) #white if above thresh else black #comment uses wrong variable name
+    
+    #thresholded = cv2.blur(thresholded,(5,5))
     
     #thresholded = np.uint8(np.clip(gray, np.percentile(gray, t_val), 100)) could try to switch to blue-scale later
     if not HEADLESS: cv2.imshow("thresholded", thresholded)
@@ -107,16 +111,19 @@ while(True):
     else: 
         contour_im, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
     
-    contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest) - TODO killthis? is this the best proxy for interestingness?
+    contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest) - Actually useful now, used to make sure only one gear retrieval is found
     
     if not HEADLESS:
         thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR) #turn it back to BGR so that when we draw things they show up in BGR        
     
     found = False
+    
+    if len(contours) > 10: continue
+    
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
         for s2 in contours:
-            if s1 is not s2:
+            if s1 is not s2 and not found:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
                 if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not interesting (and break when you divide by width)
                 if not DEBUG:
@@ -129,6 +136,9 @@ while(True):
                             s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
                             s2rot = np.int0(cv2.boxPoints(s2box))
                         if not HEADLESS:
+                            print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
+                            if (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]) > 1: print 'To the left'
+                            else: print 'To the right '
                             cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                             cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
                             cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes

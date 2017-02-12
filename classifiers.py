@@ -4,15 +4,15 @@ import math
 
 class cClassifier():
     def __init__(self):
-        self.gearClassifiers = [matchingRotation, gearAreaRatio, gearBetweenHeightRatio] #set the function names of classifiers to use here
-        self.GEAR_SIGMAS = [500, 150, 2000] #Constants of where the sigmas start
+        self.gearClassifiers = [matchingRotation, gearAreaRatio, gearBetweenHeightRatio, minAreaDiff] #set the function names of classifiers to use here
+        self.GEAR_SIGMAS = [50, 15, 1, 800] #Constants of where the sigmas start
         self.goalClassifiers = [matchingRotation, goalAreaRatio, goalBetweenHeightRatio] #set the function names of classifiers to use here
         self.GOAL_SIGMAS = [10, 1, 10] #Constants of where the sigmas start
     def classify(self, s1, s2, DEBUG, target): #returns true if it matches all of the classifiers, false if it fails any of them
         if target == "goal" or target == "turret":
             classifiers = self.goalClassifiers
             SIGMAS = self.GOAL_SIGMAS
-        else: 
+        else:
             classifiers = self.gearClassifiers
             SIGMAS = self.GEAR_SIGMAS
         passFail = []
@@ -38,7 +38,11 @@ def matchingRotation(s1, s2, sigma, getVal):
         return s1[2]/(s2[2] + .001)
             
 def distance(x1, y1, x2, y2):
-    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    if not distance == 0: return distance
+    else: 
+        print 'Distance is zero!'
+        return -1
     
 def goalAreaRatio(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
@@ -61,10 +65,11 @@ def goalBetweenHeightRatio(s1, s2, sigma, getVal):
     else:
         return betweenHeightRatio
            
-def minArea(s1, s2, sigma, getVal):
+def minAreaDiff(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
     area2 = s2[1][0]*s2[1][1]
-    return area1 > sigma and area2 > sigma
+    print 'Area diff: ' + str(area1 - area2)
+    return area1 - area2 < sigma and area1 - area2 > 0 - sigma
     
 def gearAreaRatio(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
@@ -75,17 +80,18 @@ def gearAreaRatio(s1, s2, sigma, getVal):
         return areaRatio < 1 + areaSigma and areaRatio > 1 - areaSigma
     else:
         return areaRatio
-
+ 
 def gearBetweenHeightRatio(s1, s2, sigma, getVal):
-    betweenHeightSigma = sigma #TODO: Use this somehow
     centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
-    betweenHeightRatio = centerDistance - (0.5*(s2[1][1]+s1[1][1]))/s1[1][1]
-    maxRatio = 3
-    minRatio = 0.5
-    if not getVal:
-        return betweenHeightRatio < maxRatio and betweenHeightRatio > minRatio
+    betweenHeightRatio = 0.5*(s2[1][1]+s1[1][1])/centerDistance
+    maxRatio = 1
+    minRatio = .1
+    print 'Height ratio: ' + str(betweenHeightRatio)
+    if betweenHeightRatio < maxRatio and betweenHeightRatio > - maxRatio and (betweenHeightRatio > minRatio or betweenHeightRatio < - minRatio):
+        
+        return True
     else:
-        return betweenHeightRatio
+        return False
             
 def centersToTopRatio(s1, s2, sigma, getVal):
     heightSigma = sigma
