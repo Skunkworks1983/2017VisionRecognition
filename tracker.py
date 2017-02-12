@@ -30,7 +30,7 @@ current_milli_time = lambda: int(round(time.time() * 1000))
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="pi",
     help="what input type should be used")
-ap.add_argument("-t", "--target", type=str, default="goal",
+ap.add_argument("-t", "--target", type=str, default='goal',
     help="what to detect")
 ap.add_argument("-m", "--minT_val", type=int, default="230",
     help="how hard to threshold")
@@ -47,6 +47,7 @@ args['minT_val'] = minT_val
 args['videoName'] = videoName
 args['DEBUG'] = DEBUG
 args['HEADLESS'] = HEADLESS
+if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear': target = socket.gethostname()[:-3]
 #################################
 
 ##### SOCKET INITIALIZATION #####
