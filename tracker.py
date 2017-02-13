@@ -4,7 +4,7 @@
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
-import cv2, time, sys, math, classifiers, argparse, cCamera, socket, os
+import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os
 
 #####       FUNCTIONS       #####
 #self explanatory
@@ -47,21 +47,11 @@ minT_val = args['minT_val']
 videoName = args['videoName']
 DEBUG = args['DEBUG']
 HEADLESS = args['HEADLESS']
-if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear': target = socket.gethostname()[:-3]
+'''if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear': target = socket.gethostname()[:-3]'''
 #################################
 
 ##### SOCKET INITIALIZATION #####
-HOST = '10.19.83.41'
-HOST_RECV = ''
-PORT = 5802
-
-try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((HOST, PORT))
-    print('Socket created!')
-except socket.error:
-    print("Socket creation failed (on robot network?)")
-    time.sleep(1)
+riosocket = riosocket.RioSocket()
 #################################
 
 ##### CAMERA INITIALIZATION #####
@@ -159,17 +149,17 @@ while(True):
                             cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                             cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
                             cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
-                        if DEBUG: print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
+                        '''if DEBUG: print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
                         if (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1] and DEBUG) > 1: print 'To the left'
-                        elif DEBUG: print 'To the right '
+                        elif DEBUG: print 'To the right '''
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
-                        sock.sendto(str(xProportional), (HOST, PORT))
+                        riosocket.send('goal', True, str(xProportional))
                         print("Found: " + str(xProportional))
                         found = True
 
     if not found: 
-        sock.sendto(str(lastKnown), (HOST, PORT))
+        riosocket.send('goal', False, str(lastKnown))
         print("Last:  " + str(lastKnown))
 
     if not HEADLESS:

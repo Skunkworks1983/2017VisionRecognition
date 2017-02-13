@@ -70,7 +70,7 @@ def goalBetweenHeightRatio(s1, s2, sigma, getVal):
 def minAreaDiff(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
     area2 = s2[1][0]*s2[1][1]
-    if self.DEBUG: print 'Area diff: ' + str(area1 - area2)
+    '''if self.DEBUG: print 'Area diff: ' + str(area1 - area2)'''
     return area1 - area2 < sigma and area1 - area2 > 0 - sigma
     
 def gearAreaRatio(s1, s2, sigma, getVal):
@@ -88,7 +88,7 @@ def gearBetweenHeightRatio(s1, s2, sigma, getVal):
     betweenHeightRatio = 0.5*(s2[1][1]+s1[1][1])/centerDistance
     maxRatio = 1
     minRatio = .1
-    if self.DEBUG: print 'Height ratio: ' + str(betweenHeightRatio)
+    '''if self.DEBUG: print 'Height ratio: ' + str(betweenHeightRatio)'''
     if betweenHeightRatio < maxRatio and betweenHeightRatio > - maxRatio and (betweenHeightRatio > minRatio or betweenHeightRatio < - minRatio):
         
         return True
