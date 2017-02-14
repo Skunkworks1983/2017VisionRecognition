@@ -54,8 +54,8 @@ def goalBetweenHeightRatio(s1, s2, sigma, getVal):
     betweenHeightSigma = sigma
     centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
     betweenHeightRatio = centerDistance - (0.5*(s2[1][1]+s1[1][1]))/s1[1][1]
-    maxRatio = 50
-    minRatio = 20
+    maxRatio = 14
+    minRatio = 0.5
     if not getVal:
         return betweenHeightRatio < maxRatio and betweenHeightRatio > minRatio
     else:

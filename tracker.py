@@ -87,7 +87,7 @@ while(True):
         frame = cv2.transpose(frame, frame)
     
     #resize the window and actually find the width and height
-    frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)
+    '''frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)'''
     width, height = frame.shape[1], frame.shape[0]
         
     saved = frame.copy() #to save the image if spacebar was pressed
@@ -138,7 +138,7 @@ while(True):
                             riosocket.send("goal", str(xProportional))
                         else:
                             riosocket.send("gear", str(xProportional))
-                        print("Found: " + str(xProportional))
+                        '''print("Found: " + str(xProportional))'''
                         found = True
                 else:
                     print(classifier.classify(s1box, s2box, True, args["target"]))
@@ -148,7 +148,7 @@ while(True):
             riosocket.send("goal", str(lastKnown))
         else:
             riosocket.send("gear", str(lastKnown))
-        print("Last:  " + str(lastKnown))
+        '''print("Last:  " + str(lastKnown))'''
 
     if not HEADLESS:
         parsedContours = contours
@@ -166,7 +166,7 @@ while(True):
     avgMsPerFrame = sum(times)/len(times)
     sPerFrame = avgMsPerFrame / 1000
     fps = 1 / sPerFrame
-    print("FPS: " + str(fps))
+    '''print("FPS: " + str(fps))'''
     
     if not HEADLESS: cv2.imshow('image', frame)
     if cv2.waitKey(1) & 0xFF == ord(' '):
