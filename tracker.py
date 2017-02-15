@@ -85,7 +85,6 @@ while(True):
 
     # Capture frame-by-frame
     frame = cam.nextFrame()
-    if videoName is not 'no': cam.writeVideo(frame)
     
     #if the image is not tall, skinny, and is a goal cam flip it
     #NOTE: Also flips over the y-axis
