@@ -10,21 +10,24 @@ class cCamera:
         self.inputType = inputType
         self.filename = filename
         self.videoName = videoName
+        self.threads = []
         
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
             self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
             self.stream = picamera.array.PiRGBArray(self.camera)
             self.camera.resolution = (1280, 960)
+            if self.videoName is not 'no': #Define the codec and create VideoWriter object for recording pi video
+                framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something
+                self.out = cv2.VideoWriter(self.videoName + '.h264', cv2.cv.CV_FOURCC('H', '2', '6', '4'), framerate, self.camera.resolution)
                     
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             self.cap = cv2.VideoCapture(self.filename)
             
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             self.cap = cv2.VideoCapture(0)
-
-        # Define the codec and create VideoWriter object
-        framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something
-        out = cv2.VideoWriter(self.videoName + '.h264', cv2.cv.CV_FOURCC('H', '2', '6', '4'), framerate, self.camera.resolution)
+            if self.videoName is not 'no': #Define the codec and create VideoWriter object for recording pi video
+                framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something
+                self.out = cv2.VideoWriter(self.videoName + '.avi', cv2.VideoWriter_fourcc(*'XVID'), framerate, (640, 480))
 
     def getSysInfo(self):
         if cv2.__version__ == "3.2.0": version = 3
@@ -32,9 +35,15 @@ class cCamera:
         else: print("Unkown openCV version!")
         
         return version
+    
+    def write(self, frame):
+        self.out.write(frame)
+        return
 
-    def writeVideo(self, frame):
-        out.write(frame)
+    def releaseCamera(self):
+        self.out.release()
+        try: self.cap.release()
+        except: pass
         
     def nextFrame(self):
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI"):

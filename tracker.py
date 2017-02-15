@@ -4,7 +4,7 @@
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
-import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os
+import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket
 
 #####       FUNCTIONS       #####
 #self explanatory
@@ -47,7 +47,7 @@ minT_val = args['minT_val']
 videoName = args['videoName']
 DEBUG = args['DEBUG']
 HEADLESS = args['HEADLESS']
-'''if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear': target = socket.gethostname()[:-3]'''
+if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear' and inputType is not 'pi': target = socket.gethostname()[:-3]
 #################################
 
 ##### SOCKET INITIALIZATION #####
@@ -58,7 +58,7 @@ riosocket = riosocket.RioSocket()
 #Define test file and cam object based on argument
 fileName = "./test16.h264" #file of the video to load
 cam = cCamera.cCamera(inputType, fileName, videoName)
-version = cam.getSysInfo()
+version = cam.getSysInfo() # Not technically part of camera, but cCamera will always be where opencv is, so it's good to have the version function there
 #################################
 
 ## MAIN CODE (HERE BE DRAGONS) ##
@@ -78,7 +78,7 @@ times = []
 #Print out all of a np array (only matters if we're in debug mode)
 if DEBUG:
     np.set_printoptions(threshold=np.nan)
-
+    
 while(True):
     #Get time start (for fps management)
     t0 = current_milli_time()
@@ -149,9 +149,9 @@ while(True):
                             cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                             cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
                             cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
-                        '''if DEBUG: print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
-                        if (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1] and DEBUG) > 1: print 'To the left'
-                        elif DEBUG: print 'To the right '''
+                        if DEBUG: print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
+                        if (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]) and DEBUG > 1: print 'To the left'
+                        elif DEBUG: print 'To the right '
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
                         riosocket.send('goal', True, str(xProportional))
@@ -188,4 +188,5 @@ while(True):
         print("Cleared!")
         clickedPoints = [(0, 0)]
     elif cv2.waitKey(1) & 0xFF == ord('q'):
+        cam.releaseCamera()
         break #die on q
