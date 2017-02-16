@@ -1,92 +1,179 @@
-from cShapeDetector import cShapeDetector
-import numpy as np
-import cv2, time, sys
+# tracker.py
+# Main file that (currently) is processing camera frames and trying to find the boiler, then send that x val over UDP to the roborio
 
-cap = cv2.VideoCapture(0)
+from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
+import numpy as np 
+import cv2, time, sys, math, classifiers, argparse, cCamera, os, riosocket, socket #socket only included for the error
 
-sd = cShapeDetector()
+#####     CONSTANT DEFS     #####
+HEADLESS = False #if we actually want GUI output
+DEBUG = False
+#################################
 
-millis = int(round(time.time() * 1000)) #Initialize time
-pauseFR = False
-
-def doNothing(val):
+#necesasry for the return of createTrackbar (literally does nothing)
+def doNothing(val): 
     pass
 
-t_val = 10
-shapes = 2
+#self explanatory
+def pointInContour(pt, cnt):
+    return cv2.pointPolygonTest(cnt, pt, True) > 0
+
+#adds the x,y coords to an array when the mouse is clicked on the window (used for debugging)
+clickedPoints = [(0, 0)]
+def saveClick(event,x,y,flags,param):
+    global clickedPoints
+    if event == cv2.EVENT_LBUTTONDOWN:
+        clickedPoints.append((x,y))
+
+#map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
+def map(val, width):
+    return ((2*val + 0.0)/width) - 1
+
+#quick and dirty function to get milliseconds from the time module
+current_milli_time = lambda: int(round(time.time() * 1000))
+
+#####      ARG PARSING      #####
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--inputType", type=str, default="pi",
+    help="what input type should be used")
+ap.add_argument("-t", "--target", type=str, default="goal",
+    help="what to detect")
+args = vars(ap.parse_args())
+#################################
+
+##### SOCKET INITIALIZATION #####
+try:
+    riosocket = riosocket.RioSocket()
+    print('Socket created!')
+except socket.error:
+    print("Socket creation failed (on robot network?)")
+    time.sleep(1)
+#################################
+
+##### CAMERA INITIALIZATION #####
+#Define test file and cam object based on argument
+fileName = "./testVideos/test8.h264" #file of the video to load
+cam = cCamera.cCamera(args["inputType"], fileName)
+version = cam.getSysInfo()
+#################################
+
+classifier = classifiers.cClassifier()
+
+if not HEADLESS:
+    cv2.namedWindow('image')
+    cv2.setMouseCallback('image', saveClick)
+
+#various variables that are counters or placeholders for later
+lastKnown = ""
 imageNum = 0
-cv2.namedWindow("trackbar")
-cv2.createTrackbar("t_val", "trackbar", t_val, 255, doNothing) #Creates a trackbar on the window "trackbar" to adjust t_val (threshold)
-cv2.createTrackbar("shapes", "trackbar", shapes, 100, doNothing) #Creates a trackbar on the window "trackbar" to adjust shapes (total recs found)
+
+#list of ms it took to iterate through (for fps management)
+times = []
+
+#Print out all of a np array (only matters if we're in debug mode)
+if DEBUG:
+    np.set_printoptions(threshold=np.nan)
 
 while(True):
+    #Get time start (for fps management)
+    t0 = current_milli_time()
+
     # Capture frame-by-frame
-    ret, frame = cap.read()
-    saved = frame.copy()
+    frame = cam.nextFrame() 
     
-    t_val = cv2.getTrackbarPos("t_val", "trackbar")       #Update the image and trackbar positions
-    shapes = cv2.getTrackbarPos("shapes", "trackbar")
-
+    #if the image is not tall and skinny, flip it
+    #NOTE: Also flips over the y-axis
+    if(frame.shape[1] > frame.shape[0]):
+        frame = cv2.transpose(frame, frame)
+    
+    #resize the window and actually find the width and height
+    '''frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)'''
+    width, height = frame.shape[1], frame.shape[0]
+        
+    saved = frame.copy() #to save the image if spacebar was pressed
+    
+    gray = frame[:,:,0]
+    t_val = np.max(gray)*.90
     # Our operations on the frame come here
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)                       #Convert to gray, and then threshold based on t_val
+    #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) #Convert to gray, and then threshold based on t_val
     maxThresh = 255
-    ret, thresholded = cv2.threshold(gray, t_val, maxThresh ,cv2.THRESH_BINARY)
+    ret, thresholded = cv2.threshold(gray, t_val, maxThresh, cv2.THRESH_BINARY) #white if above thresh else black #comment uses wrong variable name
+    
+    #thresholded = np.uint8(np.clip(gray, np.percentile(gray, t_val), 100)) could try to switch to blue-scale later
+    if not HEADLESS: cv2.imshow("thresholded", thresholded)
 
-    contour_img, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
+    if (version == 2): 
+        contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
+    else: 
+        contour_im, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
     
-    contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest)
+    contours.sort(key = lambda s: -1 * len(s)) #Sort the list of contours by the length of each contour (smallest to biggest) - TODO killthis? is this the best proxy for interestingness?
     
-    thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR)
+    if not HEADLESS:
+        thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR) #turn it back to BGR so that when we draw things they show up in BGR        
     
-    larger = len(contours)-1 if len(contours) > shapes else shapes
-    
-    displayed = frame
-    #print(larger)
-    #print(contours)
-    shapeContours = []
-    for i in range(shapes):
-        #print(i)
-        try:
-            curCont = contours[i]
-            shapeContours.append(i)
-        except IndexError:
-            continue
-        
-        M = cv2.moments(curCont)
-        try:
-            cx = int(M['m10']/M['m00'])
-            cy = int(M['m01']/M['m00'])      #Calculates a center for a circle at the center of the object
-            shape = sd.detect(curCont)    #Detect number of vertices, then display
-            cv2.putText(displayed, shape, (cx - 15, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, #Offsets text from center point
-                .3, (255, 0, 0), 1) #fontsize, colour, line thickness
-        except ZeroDivisionError:
-            cx = 0
-            cy = 0
-        
-        rect = cv2.minAreaRect(curCont)
-        box = cv2.boxPoints(rect)
-        box = np.int0(box)
-        
-        cv2.circle(displayed, (cx, cy), 3, (255, 0, 0), 1)
-        cv2.drawContours(displayed, [box], 0, (0, 0, 255), 2)
+    found = False
+    for s1 in contours:
+        s1box = cv2.minAreaRect(s1)
+        for s2 in contours:
+            if s1 is not s2:
+                s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
+                if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not interesting (and break when you divide by width)
+                if not DEBUG:
+                    if classifier.classify(s1box, s2box, False, args["target"]): #look at classifiers.py
+                
+                        if (version == 2):
+                            s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
+                            s2rot = np.int0(cv2.cv.BoxPoints(s2box))
+                        else:
+                            s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
+                            s2rot = np.int0(cv2.boxPoints(s2box))
+                        if not HEADLESS:
+                            cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
+                            cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
+                            cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
+                        xProportional = map(int(s1box[0][0]), width)
+                        lastKnown = xProportional
+                        if args["target"] == "goal":
+                            riosocket.send("goal", str(xProportional))
+                        else:
+                            riosocket.send("gear", str(xProportional))
+                        '''print("Found: " + str(xProportional))'''
+                        found = True
+                else:
+                    print(classifier.classify(s1box, s2box, True, args["target"]))
 
-    cv2.drawContours(displayed, contours, -1, (0, 255, 0), 1)
-    #print(contours[0])
+    if not found: 
+        if args["target"] == "goal":
+            riosocket.send("goal", str(lastKnown))
+        else:
+            riosocket.send("gear", str(lastKnown))
+        '''print("Last:  " + str(lastKnown))'''
 
-    # Display framerate
-    millisPrev = millis
-    millis = int(round(time.time() * 1000))
-    pauseFR = -1 * pauseFR
-    if pauseFR == False: 
-        cv2.putText(displayed, str(millis - millisPrev), (15, 40), cv2.FONT_HERSHEY_SIMPLEX, #Compute delay then convert to string, put in upper left corner
-            1, (255, 0, 0), 1)
+    if not HEADLESS:
+        parsedContours = contours
+        for i in clickedPoints:
+            for k,v in enumerate(parsedContours[:]):
+                if(pointInContour(i, v)):
+                    cv2.drawContours(frame, [v], -1, (255, 0, 0), 1)
+                    del parsedContours[k]
     
-    # Display the resulting frame
-    cv2.imshow('image', displayed)
+    t1 = current_milli_time()
     
+    tD = t1 - t0
+    times.append(tD)
+    times = times[-20:]
+    avgMsPerFrame = sum(times)/len(times)
+    sPerFrame = avgMsPerFrame / 1000
+    fps = 1 / sPerFrame
+    '''print("FPS: " + str(fps))'''
+    
+    if not HEADLESS: cv2.imshow('image', frame)
     if cv2.waitKey(1) & 0xFF == ord(' '):
-        cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved)
+        cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
         imageNum = imageNum + 1
-    
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    elif cv2.waitKey(1) & 0xFF == ord('c'):
+        print("Cleared!")
+        clickedPoints = [(0, 0)]
+    elif cv2.waitKey(1) & 0xFF == ord('q'):
+        break #die on q
