@@ -92,7 +92,7 @@ while(True):
         frame = cv2.transpose(frame, frame)
     
     #resize the window and actually find the width and height
-    frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)
+    '''frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)'''
     width, height = frame.shape[1], frame.shape[0]
        
     #Copying mats seems heavy on the drive if we're going to be trying to save video
@@ -153,13 +153,19 @@ while(True):
                         elif DEBUG: print 'To the right '
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
-                        riosocket.send('goal', True, str(xProportional))
-                        print("Found: " + str(xProportional))
+                        if target == "goal":
+                            riosocket.send("goal", True, str(xProportional))
+                        else:
+                            riosocket.send("gear", True, str(xProportional))
+                        '''print("Found: " + str(xProportional))'''
                         found = True
 
     if not found: 
-        riosocket.send('goal', False, str(lastKnown))
-        print("Last:  " + str(lastKnown))
+        if target == "goal":
+            riosocket.send("goal", False, str(lastKnown))
+        else:
+            riosocket.send("gear", False, str(lastKnown))
+        '''print("Last:  " + str(lastKnown))'''
 
     if not HEADLESS:
         parsedContours = contours
@@ -177,7 +183,7 @@ while(True):
     avgMsPerFrame = sum(times)/len(times)
     sPerFrame = avgMsPerFrame / 1000
     fps = 1 / sPerFrame
-    print("FPS: " + str(fps))
+    '''print("FPS: " + str(fps))'''
     
     if not HEADLESS: cv2.imshow('image', frame)
     if cv2.waitKey(1) & 0xFF == ord(' ') and DEBUG:
