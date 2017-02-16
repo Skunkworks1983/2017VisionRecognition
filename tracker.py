@@ -56,7 +56,7 @@ def map(val, width):
     return ((2*val + 0.0)/width) - 1
 
 def checkKeypresses():
-    global times
+    '''global times
 
     t1 = current_milli_time()
     
@@ -66,7 +66,7 @@ def checkKeypresses():
     avgMsPerFrame = sum(times)/len(times)
     sPerFrame = avgMsPerFrame / 1000
     fps = 1 / sPerFrame
-    print("FPS: " + str(fps))
+    print("FPS: " + str(fps))'''
     
     if not HEADLESS: cv2.imshow('image', frame)
     

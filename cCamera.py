@@ -1,4 +1,6 @@
-# TODO header comments
+# cCamera.py
+# A class that is used to simplify and standardize the various methods of video streaming.
+# It also contains code to create a seperate thread that writes the recorded video to file.
 
 import cv2, argparse, threading, time, Queue
 try: import picamera, picamera.array
@@ -8,21 +10,25 @@ lock = threading.Lock()
 queue = Queue.Queue()
 cleaningUp = False
 doneCleaning = False
+piResolution = (1280, 960)
 
+# cWriteVideo is a thread designed to save video. It pulls its frames from the queue object, which manages locking for me.
 class cWriteVideo (threading.Thread):
-    def __init__(self, videoName):
+    def __init__(self, videoName, version):
         threading.Thread.__init__(self)
+        global piResolution
         framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something
-        self.out = cv2.VideoWriter(videoName + '.avi', cv2.VideoWriter_fourcc(*'XVID'), framerate, (640, 480))
+        if version == 3: self.out = cv2.VideoWriter(videoName + '.avi', cv2.VideoWriter_fourcc(*'XVID'), framerate, (640, 480))
+        else: out = cv2.VideoWriter(self.videoName + '.avi', cv2.cv.CV_FOURCC(*'XVID'), framerate, piResolution)
     def run(self):
         global cleaningUp
         while not cleaningUp:
             while not queue.empty():
-                print(queue.qsize())
+                #print(queue.qsize()) # It can be useful for debug purposes to know how large the working queue is.
                 frame = queue.get(False)
                 queue.task_done()
                 self.out.write(frame)
-        self.out.release()
+        self.out.release() # Finalize video saving. If your video is corrupted, it is because this did not get called successfully.
         global doneCleaning
         doneCleaning = True
 
@@ -37,11 +43,7 @@ class cCamera:
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
             self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
             self.stream = picamera.array.PiRGBArray(self.camera)
-            self.camera.resolution = (1280, 960)
-            '''if self.videoName is not 'no': #Define the codec and create VideoWriter object for recording pi video
-                framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something
-                global out
-                out = cv2.VideoWriter(self.videoName + '.h264', cv2.cv.CV_FOURCC('H', '2', '6', '4'), framerate, self.camera.resolution)'''
+            self.camera.resolution = piResolution
                     
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             self.cap = cv2.VideoCapture(self.filename)
@@ -50,7 +52,7 @@ class cCamera:
             self.cap = cv2.VideoCapture(0)
         
         if self.videoName is not 'no':
-            thread = cWriteVideo(self.videoName)
+            thread = cWriteVideo(self.videoName, self.getSysInfo())
             thread.start()
 
     def getSysInfo(self):
