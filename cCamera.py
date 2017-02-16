@@ -18,12 +18,11 @@ class cWriteVideo (threading.Thread):
         global cleaningUp
         while not cleaningUp:
             while not queue.empty():
-                frame = queue.get(True, 0)
-                queue.task_done()
+                print(queue.qsize())
+                frame = queue.get(True, -1)
                 self.out.write(frame)
+                queue.task_done()
         self.out.release()
-        global doneCleaning
-        doneCleaning = True
 
 class cCamera:
     def __init__(self, inputType, filename, videoName):
@@ -56,18 +55,17 @@ class cCamera:
         if cv2.__version__ == "3.2.0": version = 3
         elif cv2.__version__ == "2.4.9.1": version = 2
         else: print("Unkown openCV version!")
-        
+
         return version
 
     def releaseCamera(self):
         global cleaningUp
-        global doneCleaning
         cleaningUp = True
         try: self.cap.release()
         except: pass
-        while not doneCleaning:
-            time.sleep(100)
-        
+        queue.join()
+        time.sleep(1000)
+
     def nextFrame(self):
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI"):
             self.camera.capture(self.stream, 'bgr', use_video_port=True)
@@ -86,7 +84,6 @@ class cCamera:
             ret, frame = self.cap.retrieve()
         
         if self.videoName is not 'no':
-            queue.put(frame.copy())
-            print(queue.qsize())
+            queue.put(frame.copy()) 
         
         return frame
