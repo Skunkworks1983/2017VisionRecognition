@@ -6,26 +6,6 @@ from __future__ import division #IMPORTANT: Float division will work as intended
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket
 
-#####       FUNCTIONS       #####
-#self explanatory
-def pointInContour(pt, cnt):
-    return cv2.pointPolygonTest(cnt, pt, True) > 0
-
-#adds the x,y coords to an array when the mouse is clicked on the window (used for debugging)
-clickedPoints = [(0, 0)]
-def saveClick(event,x,y,flags,param):
-    global clickedPoints
-    if event == cv2.EVENT_LBUTTONDOWN:
-        clickedPoints.append((x,y))
-
-#map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
-def map(val, width):
-    return ((2*val + 0.0)/width) - 1
-
-#quick and dirty function to get milliseconds from the time module
-current_milli_time = lambda: int(round(time.time() * 1000))
-#################################
-
 #####      ARG PARSING      #####
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="pi",
@@ -50,6 +30,57 @@ HEADLESS = args['HEADLESS']
 if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear' and inputType is not 'pi': target = socket.gethostname()[:-3]
 #################################
 
+#####  VARIOUS DECLERATION  #####
+classifier = classifiers.cClassifier()
+
+if not HEADLESS: cv2.namedWindow('image')
+
+#various variables that are counters or placeholders for later
+lastKnown = ""
+imageNum = 0
+
+#list of ms it took to iterate through (for fps management)
+times = []
+
+#Print out all of a np array (only matters if we're in debug mode)
+if DEBUG: np.set_printoptions(threshold=np.nan)
+#################################
+
+#####       FUNCTIONS       #####
+#self explanatory
+def pointInContour(pt, cnt):
+    return cv2.pointPolygonTest(cnt, pt, True) > 0
+
+#map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
+def map(val, width):
+    return ((2*val + 0.0)/width) - 1
+
+def checkKeypresses():
+    global times
+
+    t1 = current_milli_time()
+    
+    tD = t1 - t0
+    times.append(tD)
+    times = times[-20:]
+    avgMsPerFrame = sum(times)/len(times)
+    sPerFrame = avgMsPerFrame / 1000
+    fps = 1 / sPerFrame
+    print("FPS: " + str(fps))
+    
+    if not HEADLESS: cv2.imshow('image', frame)
+    
+    if cv2.waitKey(1) & 0xFF == ord(' ') and DEBUG:
+        cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
+        imageNum = imageNum + 1
+    elif cv2.waitKey(1) & 0xFF == ord('q'):
+        cam.releaseCamera()
+        sys.exit() #die on q
+    
+#quick and dirty function to get milliseconds from the time module
+current_milli_time = lambda: int(round(time.time() * 1000))
+#################################
+
 ##### SOCKET INITIALIZATION #####
 riosocket = riosocket.RioSocket()
 #################################
@@ -61,24 +92,7 @@ cam = cCamera.cCamera(inputType, fileName, videoName)
 version = cam.getSysInfo() # Not technically part of camera, but cCamera will always be where opencv is, so it's good to have the version function there
 #################################
 
-## MAIN CODE (HERE BE DRAGONS) ##
-classifier = classifiers.cClassifier()
-
-if not HEADLESS:
-    cv2.namedWindow('image')
-    cv2.setMouseCallback('image', saveClick)
-
-#various variables that are counters or placeholders for later
-lastKnown = ""
-imageNum = 0
-
-#list of ms it took to iterate through (for fps management)
-times = []
-
-#Print out all of a np array (only matters if we're in debug mode)
-if DEBUG:
-    np.set_printoptions(threshold=np.nan)
-    
+## MAIN CODE (HERE BE DRAGONS) ##    
 while(True):
     #Get time start (for fps management)
     t0 = current_milli_time()
@@ -127,14 +141,16 @@ while(True):
     
     if len(contours) > 10: 
         if DEBUG: print 'To many contours to process'
+        checkKeypresses()
         continue
     
     for s1 in contours:
         s1box = cv2.minAreaRect(s1)
+        if s1box[1][1] == 0: continue
         for s2 in contours:
             if s1 is not s2 and not found:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
-                if s1box[1][1] == 0 or s2box[1][1] == 0: continue # 0 width contours are not interesting (and skip if you have to divide by width)
+                if s2box[1][1] == 0: continue # 0 width contours are not interesting (and skip if you have to divide by width)
                 if not DEBUG:
                     if classifier.classify(s1box, s2box, DEBUG, target): #look at classifiers.py
                         if not HEADLESS:
@@ -157,7 +173,7 @@ while(True):
                             riosocket.send("goal", True, str(xProportional))
                         else:
                             riosocket.send("gear", True, str(xProportional))
-                        '''print("Found: " + str(xProportional))'''
+                        print("Found: " + str(xProportional))
                         found = True
 
     if not found: 
@@ -166,32 +182,5 @@ while(True):
         else:
             riosocket.send("gear", False, str(lastKnown))
         '''print("Last:  " + str(lastKnown))'''
-
-    if not HEADLESS:
-        parsedContours = contours
-        for i in clickedPoints:
-            for k,v in enumerate(parsedContours[:]):
-                if(pointInContour(i, v)):
-                    cv2.drawContours(frame, [v], -1, (255, 0, 0), 1)
-                    del parsedContours[k]
-    
-    t1 = current_milli_time()
-    
-    tD = t1 - t0
-    times.append(tD)
-    times = times[-20:]
-    avgMsPerFrame = sum(times)/len(times)
-    sPerFrame = avgMsPerFrame / 1000
-    fps = 1 / sPerFrame
-    '''print("FPS: " + str(fps))'''
-    
-    if not HEADLESS: cv2.imshow('image', frame)
-    if cv2.waitKey(1) & 0xFF == ord(' ') and DEBUG:
-        cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
-        imageNum = imageNum + 1
-    elif cv2.waitKey(1) & 0xFF == ord('c'):
-        print("Cleared!")
-        clickedPoints = [(0, 0)]
-    elif cv2.waitKey(1) & 0xFF == ord('q'):
-        cam.releaseCamera()
-        break #die on q
+        
+    checkKeypresses()

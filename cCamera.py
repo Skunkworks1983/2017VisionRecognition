@@ -1,6 +1,6 @@
 # TODO header comments
 
-import cv2, argparse, threading, Queue
+import cv2, argparse, threading, time, Queue
 try: import picamera, picamera.array
 except: pass
 
@@ -19,10 +19,12 @@ class cWriteVideo (threading.Thread):
         while not cleaningUp:
             while not queue.empty():
                 print(queue.qsize())
-                frame = queue.get(True, -1)
-                self.out.write(frame)
+                frame = queue.get(False)
                 queue.task_done()
+                self.out.write(frame)
         self.out.release()
+        global doneCleaning
+        doneCleaning = True
 
 class cCamera:
     def __init__(self, inputType, filename, videoName):
@@ -59,12 +61,12 @@ class cCamera:
         return version
 
     def releaseCamera(self):
-        global cleaningUp
+        global cleaningUp, doneCleaning
         cleaningUp = True
         try: self.cap.release()
         except: pass
-        queue.join()
-        time.sleep(1000)
+        if doneCleaning is False:
+            time.sleep(100)
 
     def nextFrame(self):
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI"):
@@ -84,6 +86,6 @@ class cCamera:
             ret, frame = self.cap.retrieve()
         
         if self.videoName is not 'no':
-            queue.put(frame.copy()) 
+            queue.put(frame.copy())
         
         return frame
