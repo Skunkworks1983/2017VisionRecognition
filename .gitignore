@@ -1,5 +1,9 @@
 
 *.pyc
+
+
+/testPhotos
+\testPhotos
 *.h264
 
-testPhotos/
+*.avi
