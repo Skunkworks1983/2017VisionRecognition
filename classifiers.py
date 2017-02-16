@@ -17,7 +17,7 @@ class cClassifier():
             SIGMAS = self.GEAR_SIGMAS
         passFail = []
         #if not getVal:
-        if True: #What even is this?
+        if True: #What even is this? TODO Eli pls fix
             for k, v in enumerate(classifiers):
                 if not v(s1, s2, SIGMAS[k], getVal): #call the respective function
                     passFail.append(False)

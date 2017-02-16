@@ -76,7 +76,7 @@ class cCamera:
             frame = self.stream.array
             self.stream.seek(0)
             self.stream.truncate()
-            frame = frame[20:960, 0:1200]
+            #frame = frame[20:960, 0:1200] # This was the software solution to the led ring getting into the frame. The new mount should fix this
                 
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             if not self.cap.grab(): #if the video has run out of frames

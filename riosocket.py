@@ -3,7 +3,7 @@
 import socket
 
 HOST = "10.19.83.2"
-PORT = 5802
+PORT = 5802 # TODO port cannot be hardcoded.
 
 class RioSocket():
     def __init__(self):
