@@ -135,9 +135,9 @@ while(True):
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
                         if args["target"] == "goal":
-                            riosocket.send("goal", str(xProportional))
+                            riosocket.send("goal", True, str(xProportional))
                         else:
-                            riosocket.send("gear", str(xProportional))
+                            riosocket.send("gear", True, str(xProportional))
                         '''print("Found: " + str(xProportional))'''
                         found = True
                 else:
@@ -145,9 +145,9 @@ while(True):
 
     if not found: 
         if args["target"] == "goal":
-            riosocket.send("goal", str(lastKnown))
+            riosocket.send("goal", False, str(lastKnown))
         else:
-            riosocket.send("gear", str(lastKnown))
+            riosocket.send("gear", False, str(lastKnown))
         '''print("Last:  " + str(lastKnown))'''
 
     if not HEADLESS:

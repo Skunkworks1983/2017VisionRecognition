@@ -9,8 +9,9 @@ class RioSocket():
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
-    def send(self, type, x, y=0):
+    def send(self, type, isFound, x, y=0):
         first = 1 if type == "goal" else 0
-        message = str(type) + " " + str(x) + " " + str(y)
+	isFound = 1 if isFound else 0
+        message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
         self.sock.sendto(message, (HOST, PORT))
             
