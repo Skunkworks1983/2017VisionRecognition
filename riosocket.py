@@ -16,6 +16,9 @@ class RioSocket():
         isFound = 1 if isFound else 0
         message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
         self.sock.sendto(message, (HOST, PORT))
+
+    def recv(self):
+        return self.sock.recvfrom(MSG_LEN)
    
     def shutdown():
         #eric, put your shutdown stuff in here
