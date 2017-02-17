@@ -19,8 +19,3 @@ class RioSocket():
 
     def recv(self):
         return self.sock.recvfrom(MSG_LEN)
-   
-    def shutdown():
-        #eric, put your shutdown stuff in here
-
-        os.system("sudo shutdown -h now")
