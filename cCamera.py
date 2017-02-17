@@ -38,7 +38,6 @@ class cCamera:
         self.inputType = inputType
         self.filename = filename
         self.videoName = videoName
-        self.threads = []
         
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
             self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap

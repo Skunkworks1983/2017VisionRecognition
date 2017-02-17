@@ -184,10 +184,11 @@ while(True):
         '''print("Last:  " + str(lastKnown))'''
 
     # RIOSOCKET SHUTDOWN PROTOCOL
-    data, address = riosocket.recvfrom(MSG_LEN)
+    data, address = riosocket.recv(MSG_LEN)
 
     if(data == "shutdown"):
-        riosocket.shutdown();
+        cam.releaseCamera()
+        os.system("sudo shutdown -h now")
         
     checkKeypresses()
     
