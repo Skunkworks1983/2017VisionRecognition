@@ -182,6 +182,12 @@ while(True):
         else:
             riosocket.send("gear", False, str(lastKnown))
         '''print("Last:  " + str(lastKnown))'''
+
+    # RIOSOCKET SHUTDOWN PROTOCOL
+    data, address = riosocket.recvfrom(MSG_LEN)
+
+    if(data == "shutdown"):
+        riosocket.shutdown();
         
     checkKeypresses()
     
