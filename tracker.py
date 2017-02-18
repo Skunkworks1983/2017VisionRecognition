@@ -74,9 +74,7 @@ def checkKeypresses():
         cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
         imageNum = imageNum + 1
     elif cv2.waitKey(1) & 0xFF == ord('q'):
-        cam.releaseCamera()
-	cam.releaseVideo()
-        sys.exit() #die on q
+        riosocket.shutdown()
     
 #quick and dirty function to get milliseconds from the time module
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -184,11 +182,14 @@ while(True):
             riosocket.send("gear", False, str(lastKnown))
         '''print("Last:  " + str(lastKnown))'''
 
+    checkKeypresses()
+        
     # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
     data = riosocket.recv()
 
     if(data == "shutdown"):
         cam.releaseCamera()
+        cam.releaseVideo()
         os.system("sudo shutdown -h now")
         
     if(data == "auto"):
@@ -201,6 +202,3 @@ while(True):
         
     if(saveVideo):
         cam.startVideoSave('dev' + target + time.time())
-        
-    checkKeypresses()
-

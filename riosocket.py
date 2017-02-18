@@ -5,6 +5,7 @@ import socket, os, threading
 HOST = "10.19.83.2"
 PORT = 5802 # TODO port cannot be hardcoded.
 data = ''
+shutdown = False
 
 class cListen (threading.Thread):
     def __init__(self):
@@ -14,9 +15,10 @@ class cListen (threading.Thread):
         
     def run(self):
 	global data
-        while data is not 'shutdown': 
-	    try: data, addrs = self.sock.recvfrom(self.MSG_LEN)
-            except: pass
+    global shutdown
+    while data is not 'shutdown' and not shutdown: 
+        try: data, addrs = self.sock.recvfrom(self.MSG_LEN)
+        except: pass
 
 class RioSocket():
     def __init__(self):
@@ -33,4 +35,9 @@ class RioSocket():
 
     def recv(self):
         global data
-        return data
+        if not shutdown: return data
+        else: return 'shutdown'
+        
+    def shutdown(self):
+        global shutdown
+        shutdown = True
