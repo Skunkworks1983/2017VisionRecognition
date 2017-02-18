@@ -14,7 +14,7 @@ ap.add_argument("-t", "--target", type=str, default='goal',
     help="what to detect")
 ap.add_argument("-m", "--minT_val", type=int, default=230,
     help="how hard to threshold")
-ap.add_argument("-s", "saveVideo", type=bool, default=False,
+ap.add_argument("-s", "--saveVideo", type=bool, default=False,
     help="whether to save video or not")
 ap.add_argument("-d", "--DEBUG", type=bool, default=False,
     help="whether to output debug vals")
@@ -75,6 +75,7 @@ def checkKeypresses():
         imageNum = imageNum + 1
     elif cv2.waitKey(1) & 0xFF == ord('q'):
         cam.releaseCamera()
+	cam.releaseVideo()
         sys.exit() #die on q
     
 #quick and dirty function to get milliseconds from the time module
@@ -184,7 +185,7 @@ while(True):
         '''print("Last:  " + str(lastKnown))'''
 
     # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
-    data, address = riosocket.recv(MSG_LEN)
+    data = riosocket.recv()
 
     if(data == "shutdown"):
         cam.releaseCamera()
@@ -202,4 +203,4 @@ while(True):
         cam.startVideoSave('dev' + target + time.time())
         
     checkKeypresses()
-    
+

@@ -1,11 +1,10 @@
 #RioSocket.py
 #Formats data to be sent of to cMessenger
-import socket, os
+import socket, os, threading
 
 HOST = "10.19.83.2"
 PORT = 5802 # TODO port cannot be hardcoded.
-
-message = ""
+data = ''
 
 class cListen (threading.Thread):
     def __init__(self):
@@ -14,8 +13,10 @@ class cListen (threading.Thread):
         self.MSG_LEN = 1024
         
     def run(self):
-        global message
-        while True message = self.sock.recvfrom(self.MSG_LEN)
+	global data
+        while data is not 'shutdown': 
+	    try: data, addrs = self.sock.recvfrom(self.MSG_LEN)
+            except: pass
 
 class RioSocket():
     def __init__(self):
@@ -28,8 +29,8 @@ class RioSocket():
         isFound = 1 if isFound else 0
         message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
         try: self.sock.sendto(message, (HOST, PORT))
-        except: print('Could not connect!')
+        except: pass
 
     def recv(self):
-        global message
-        return message
+        global data
+        return data
