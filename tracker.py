@@ -35,6 +35,8 @@ classifier = classifiers.cClassifier()
 
 if not HEADLESS: cv2.namedWindow('image')
 
+writing = False
+
 #various variables that are counters or placeholders for later
 lastKnown = ""
 imageNum = 0
@@ -55,7 +57,7 @@ def pointInContour(pt, cnt):
 def map(val, width):
     return ((2*val + 0.0)/width) - 1
 
-def checkKeypresses():
+def checkInputs():
     '''global times
 
     t1 = current_milli_time()
@@ -73,8 +75,32 @@ def checkKeypresses():
     if cv2.waitKey(1) & 0xFF == ord(' ') and DEBUG:
         cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
         imageNum = imageNum + 1
+        
     elif cv2.waitKey(1) & 0xFF == ord('q'):
         riosocket.shutdown()
+        
+    # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
+    data = riosocket.recv()
+
+    global writing
+    
+    if(data == "shutdown"):
+        cam.releaseCamera()
+        if writing: cam.releaseVideo()
+        if inputType == 'pi': os.system("sudo shutdown -h now")
+        else: sys.exit()
+        
+    if(data == "auto"):
+        cam.startVideoSave('auto' + target + time.time())
+        writing = True
+    
+    if(data == "tele"):
+        if writing: cam.releaseVideo()
+        cam.startVideoSave('tele' + target + time.time())
+        writing = True
+        
+    if(saveVideo):
+        cam.startVideoSave('dev' + target + time.time())
     
 #quick and dirty function to get milliseconds from the time module
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -140,7 +166,7 @@ while(True):
     
     if len(contours) > 10: 
         if DEBUG: print 'To many contours to process'
-        checkKeypresses()
+        checkInputs()
         continue
     
     for s1 in contours:
@@ -182,23 +208,4 @@ while(True):
             riosocket.send("gear", False, str(lastKnown))
         '''print("Last:  " + str(lastKnown))'''
 
-    checkKeypresses()
-        
-    # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
-    data = riosocket.recv()
-
-    if(data == "shutdown"):
-        cam.releaseCamera()
-        cam.releaseVideo()
-        os.system("sudo shutdown -h now")
-        
-    if(data == "auto"):
-        cam.startVideoSave('auto' + target + time.time())
-    
-    if(data == "tele"):
-        try: cam.releaseVideo()
-        except: pass
-        cam.startVideoSave('tele' + target + time.time())
-        
-    if(saveVideo):
-        cam.startVideoSave('dev' + target + time.time())
+    checkInputs()

@@ -14,11 +14,11 @@ class cListen (threading.Thread):
         self.MSG_LEN = 1024
         
     def run(self):
-	global data
-    global shutdown
-    while data is not 'shutdown' and not shutdown: 
-        try: data, addrs = self.sock.recvfrom(self.MSG_LEN)
-        except: pass
+        global data
+        global shutdown
+        while data is not 'shutdown' and not shutdown: 
+            try: data, addrs = self.sock.recvfrom(self.MSG_LEN)
+            except: pass
 
 class RioSocket():
     def __init__(self):
@@ -35,8 +35,11 @@ class RioSocket():
 
     def recv(self):
         global data
-        if not shutdown: return data
-        else: return 'shutdown'
+        global shutdown
+        if not shutdown: 
+            return data
+        else:
+            return 'shutdown'
         
     def shutdown(self):
         global shutdown
