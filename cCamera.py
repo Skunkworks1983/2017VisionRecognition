@@ -38,6 +38,7 @@ class cCamera:
         self.inputType = inputType
         self.filename = filename
         self.videoName = videoName
+        self.save = False
         
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
             self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
@@ -49,10 +50,6 @@ class cCamera:
             
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             self.cap = cv2.VideoCapture(0)
-        
-        if self.videoName is not 'no':
-            thread = cWriteVideo(self.videoName, self.getSysInfo())
-            thread.start()
 
     def getSysInfo(self):
         if cv2.__version__ == "3.2.0": version = 3
@@ -61,6 +58,12 @@ class cCamera:
 
         return version
 
+    def startVideoSave(self):
+        self.save = True
+        if self.videoName is not 'no':
+            thread = cWriteVideo(self.videoName, self.getSysInfo())
+            thread.start()
+        
     def releaseCamera(self):
         global cleaningUp, doneCleaning
         cleaningUp = True
@@ -86,7 +89,7 @@ class cCamera:
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             ret, frame = self.cap.retrieve()
         
-        if self.videoName is not 'no':
+        if self.save:
             queue.put(frame.copy())
         
         return frame

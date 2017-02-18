@@ -183,12 +183,15 @@ while(True):
             riosocket.send("gear", False, str(lastKnown))
         '''print("Last:  " + str(lastKnown))'''
 
-    # RIOSOCKET SHUTDOWN PROTOCOL
+    # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
     data, address = riosocket.recv(MSG_LEN)
 
     if(data == "shutdown"):
         cam.releaseCamera()
         os.system("sudo shutdown -h now")
+        
+    if(data == "save"):
+        cam.startVideoSave()
         
     checkKeypresses()
     
