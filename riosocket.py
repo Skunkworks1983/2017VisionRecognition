@@ -5,17 +5,31 @@ import socket, os
 HOST = "10.19.83.2"
 PORT = 5802 # TODO port cannot be hardcoded.
 
-MSG_LEN = 1024
+message = ""
+
+class cListen (threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.MSG_LEN = 1024
+        
+    def run(self):
+        global message
+        while True message = self.sock.recvfrom(self.MSG_LEN)
 
 class RioSocket():
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        thread = cListen()
+        thread.start()
         
     def send(self, type, isFound, x, y=0):
         type = 1 if type == "goal" else 0
         isFound = 1 if isFound else 0
         message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
-        self.sock.sendto(message, (HOST, PORT))
+        try: self.sock.sendto(message, (HOST, PORT))
+        except: print('Could not connect!')
 
     def recv(self):
-        return self.sock.recvfrom(MSG_LEN)
+        global message
+        return message
