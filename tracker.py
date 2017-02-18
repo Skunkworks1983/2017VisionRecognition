@@ -14,8 +14,8 @@ ap.add_argument("-t", "--target", type=str, default='goal',
     help="what to detect")
 ap.add_argument("-m", "--minT_val", type=int, default=230,
     help="how hard to threshold")
-ap.add_argument("-v", "--videoName", type=str, default="no",
-    help="name of video (input nothing to not save video)")
+ap.add_argument("-s", "saveVideo", type=bool, default=False,
+    help="whether to save video or not")
 ap.add_argument("-d", "--DEBUG", type=bool, default=False,
     help="whether to output debug vals")
 ap.add_argument("-e", "--HEADLESS", type=bool, default=False,
@@ -24,7 +24,7 @@ args = vars(ap.parse_args())
 inputType = args['inputType'] # I got annoyed typing theThingIActuallyWant'] over and over
 target = args['target']
 minT_val = args['minT_val']
-videoName = args['videoName']
+saveVideo = args['saveVideo']
 DEBUG = args['DEBUG']
 HEADLESS = args['HEADLESS']
 if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear' and inputType is not 'pi': target = socket.gethostname()[:-3]
@@ -88,7 +88,7 @@ riosocket = riosocket.RioSocket()
 ##### CAMERA INITIALIZATION #####
 #Define test file and cam object based on argument
 fileName = "./test16.h264" #file of the video to load
-cam = cCamera.cCamera(inputType, fileName, videoName)
+cam = cCamera.cCamera(inputType, fileName)
 version = cam.getSysInfo() # Not technically part of camera, but cCamera will always be where opencv is, so it's good to have the version function there
 #################################
 
@@ -190,8 +190,16 @@ while(True):
         cam.releaseCamera()
         os.system("sudo shutdown -h now")
         
-    if(data == "save"):
-        cam.startVideoSave()
+    if(data == "auto"):
+        cam.startVideoSave('auto' + target + time.time())
+    
+    if(data == "tele"):
+        try: cam.releaseVideo()
+        except: pass
+        cam.startVideoSave('tele' + target + time.time())
+        
+    if(saveVideo):
+        cam.startVideoSave('dev' + target + time.time())
         
     checkKeypresses()
     
