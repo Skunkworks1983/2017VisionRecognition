@@ -24,7 +24,7 @@ ap.add_argument("-s", "--saveVideo", type=bool, default=False,
     help="whether to save video or not")
 ap.add_argument("-d", "--DEBUG", type=bool, default=False,
     help="whether to output debug vals")
-ap.add_argument("-e", "--HEADLESS", type=bool, default=False,
+ap.add_argument("-e", "--HEADLESS", type=bool, default=True,
     help="whether to display images")
 args = vars(ap.parse_args())
 inputType = args['inputType'] 
