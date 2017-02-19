@@ -31,6 +31,7 @@ class cWriteVideo (threading.Thread):
         self.out.release() # Finalize video saving. If your video is corrupted, it is because this did not get called successfully.
         global doneCleaning
         doneCleaning = True
+        print('Exiting cWriteVideo thread...')
 
 class cCamera:
     def __init__(self, inputType, filename):
