@@ -11,6 +11,7 @@
 #
 import os
 import RPi.GPIO as GPIO
+import filecmp
 
 def configData(IP):
 	return str('#static ip\ninterface eth0\nstatic ip_address='+IP+'/24\nstatic routers=10.19.83.1\nstatic domain_name_servers=8.8.8.8 8.8.4.4\n')
@@ -104,11 +105,11 @@ if not generic:
                 os.system('sudo shutdown -r now')
 
 # Check for tracker daemon startup
-if not os.path.exists('/etc/init.d/trackerd') or not open('/etc/init.d/trackerd', 'r').read() == open('/home/pi/2017VisionRecognition/trackerd', 'r').read() :
+if not os.path.exists('/lib/systemd/system/tracker.service') or not open('/lib/systemd/system/tracker.service', 'r').read() == open('/home/pi/2017VisionRecognition/tracker.service', 'r').read() :
     print 'updating tracker startup daemon'
-    os.system("sudo cp -f /home/pi/2017VisionRecognition/trackerd /etc/init.d/trackerd")
-    os.system("sudo chmod 755 /etc/init.d/trackerd")
-    os.system("sudo chmod 755 /home/pi/2017VisionRecognition/tracker.py")
-    os.system('sudo update-rc.d trackerd defaults')
+    os.system("cp -f /home/pi/2017VisionRecognition/tracker.service /lib/systemd/system/tracker.service")
+    os.system("chmod 755 /lib/systemd/system/tracker.service")
+    os.system("systemctl daemon-reload")
+    os.system("systemctl enable tracker.service")
     os.system('sudo shutdown -r now')
 
