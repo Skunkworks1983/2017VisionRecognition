@@ -1,0 +1,12 @@
+[Unit]
+Description=Tracker
+After=multi-user.target
+ 
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /home/pi/2017VisionRecognition/tracker.py
+Restart=on-abort
+ 
+[Install]
+WantedBy=multi-user.target
+ 
