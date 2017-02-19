@@ -92,8 +92,12 @@ def checkInputs():
     if(data == "shutdown"):
         cam.releaseCamera()
         if writing: cam.releaseVideo()
-        if inputType == 'pi': os.system("sudo shutdown -h now")
-        else: sys.exit()
+        os.system("sudo shutdown -h now")
+
+    if(data == 'shutdownq'):
+        cam.releaseCamera()
+        if writing: cam.releaseVideo()
+        sys.exit()
         
     if(data == "auto"):
         cam.startVideoSave('auto' + target + time.time())

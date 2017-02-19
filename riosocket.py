@@ -39,7 +39,7 @@ class RioSocket():
         if not shutdown: 
             return data
         else:
-            return 'shutdown'
+            return 'shutdownq'
         
     def shutdown(self):
         global shutdown
