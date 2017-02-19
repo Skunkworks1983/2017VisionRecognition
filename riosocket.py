@@ -18,4 +18,5 @@ class RioSocket():
         self.sock.sendto(message, (HOST, PORT))
 
     def recv(self):
+	MSG_LEN = 1024
         return self.sock.recvfrom(MSG_LEN)
