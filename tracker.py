@@ -1,16 +1,22 @@
+#!/usr/bin/python
+
 # tracker.py
-# Main file that (currently) is processing camera frames and trying to find the boiler, then send that x val over UDP to the roborio
-# NOTE: I moved the headless, debug, and minT_val modifiers to arg parse
+# Main file that is processing camera frames and trying to find the vision target, then send that val over UDP to the roborio
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket
 
+# where are we running? Get hostname then drop the "-pi" from gear-pi or goal-pi
+targetFromHostname = socket.gethostname()[:-3] 
+if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
+    targetFromHostname = 'goal' # no GPIO header installed, choose a sane default
+
 #####      ARG PARSING      #####
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="pi",
     help="what input type should be used")
-ap.add_argument("-t", "--target", type=str, default='goal',
+ap.add_argument("-t", "--target", type=str, default=targetFromHostname,
     help="what to detect")
 ap.add_argument("-m", "--minT_val", type=int, default=230,
     help="how hard to threshold")
@@ -21,13 +27,12 @@ ap.add_argument("-d", "--DEBUG", type=bool, default=False,
 ap.add_argument("-e", "--HEADLESS", type=bool, default=False,
     help="whether to display images")
 args = vars(ap.parse_args())
-inputType = args['inputType'] # I got annoyed typing theThingIActuallyWant'] over and over
+inputType = args['inputType'] 
 target = args['target']
 minT_val = args['minT_val']
 saveVideo = args['saveVideo']
 DEBUG = args['DEBUG']
 HEADLESS = args['HEADLESS']
-if socket.gethostname()[:-3] == 'goal' or socket.gethostname()[:-3] == 'gear' and inputType is not 'pi': target = socket.gethostname()[:-3]
 #################################
 
 #####  VARIOUS DECLERATION  #####
@@ -55,7 +60,7 @@ def pointInContour(pt, cnt):
 
 #map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
 def map(val, width):
-    return ((2*val + 0.0)/width) - 1
+    return ((2*val/width) - 1)
 
 def checkInputs():
     '''global times
@@ -72,7 +77,7 @@ def checkInputs():
     
     if not HEADLESS: cv2.imshow('image', frame)
     
-    if cv2.waitKey(1) & 0xFF == ord(' ') and DEBUG:
+    if DEBUG and cv2.waitKey(1) & 0xFF == ord(' '):
         cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
         imageNum = imageNum + 1
         
@@ -137,15 +142,15 @@ while(True):
     #Copying mats seems heavy on the drive if we're going to be trying to save video
     if DEBUG: saved = frame.copy() #to save the image if spacebar was pressed 
     
-    gray = frame[:,:,0]
-    t_val = np.max(gray)*.90
-    if t_val < minT_val: t_val = minT_val
-    else: pass
-    
     # Our operations on the frame come here
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) #Convert to gray, and then threshold based on t_val
+    gray = frame[:,:,0] # pull just one channel
+    t_val = np.max(gray)*.90 # drop the lowest brightness pixels
+    if t_val < minT_val: t_val = minT_val # but in a very dim scene its ok to drop everything
+    else: pass
+    
     maxThresh = 255
-    ret, thresholded = cv2.threshold(gray, t_val, maxThresh, cv2.THRESH_BINARY) #white if above thresh else black #comment uses wrong variable name
+    ret, thresholded = cv2.threshold(gray, t_val, maxThresh, cv2.THRESH_BINARY) #white if above thresh else black
     
     #thresholded = cv2.blur(thresholded,(5,5))
     
@@ -170,10 +175,12 @@ while(True):
         continue
     
     for s1 in contours:
+        if found:
+            break
         s1box = cv2.minAreaRect(s1)
         if s1box[1][1] == 0: continue
         for s2 in contours:
-            if s1 is not s2 and not found:
+            if s1 is not s2:
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
                 if s2box[1][1] == 0: continue # 0 width contours are not interesting (and skip if you have to divide by width)
                 if not DEBUG:
@@ -189,17 +196,19 @@ while(True):
                             cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
                             cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
                             cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
-                        if DEBUG: print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
-                        if (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]) and DEBUG > 1: print 'To the left'
-                        elif DEBUG: print 'To the right '
+                        if DEBUG: 
+                            print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
+                            if DEBUG > 1 and (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]): print 'To the left'
+                            else: print 'To the right '
                         xProportional = map(int(s1box[0][0]), width)
                         lastKnown = xProportional
                         if target == "goal":
                             riosocket.send("goal", True, str(xProportional))
                         else:
                             riosocket.send("gear", True, str(xProportional))
-                        print("Found: " + str(xProportional))
+                        if DEBUG : print("Found: " + str(xProportional))
                         found = True
+                        break
 
     if not found: 
         if target == "goal":

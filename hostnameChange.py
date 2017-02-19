@@ -40,17 +40,17 @@ with open('/etc/hostname','r') as myhfile:
 	oldHostname = myhfile.read()
 
 if not GPIO.input(GearSignalPin):
-	print 'Jumper on gear pin, setting gearPi'
+	print 'Jumper on gear pin'
 	desiredHostname = gearPI
 	desiredIP = gearIP
 	wrongIP = goalIP
 elif not GPIO.input(GoalSignalPin):
-	print 'Jumper on goal pin, setting goalPi'
+	print 'Jumper on goal pin'
 	desiredHostname = goalPI
 	desiredIP = goalIP
 	wrongIP = gearIP
 else:
-	print 'No jumpers installed, reverting to dhcp'
+	print 'No jumpers installed'
 	# do we need to revert IP and/or hostname?
 	if gearIP in dhcpConfigData or goalPI in oldHostname or goalIP in dhcpConfigData or goalPI in oldHostname:
 		if goalIP in dhcpConfigData:
@@ -76,7 +76,7 @@ else:
 	generic = True
 	
 # turn off wifi
-os.system('sudo ifconfig wlan0 down')
+#os.system('sudo ifconfig wlan0 down')
 
 # do we need to update IP and/or hostname?
 if not generic:
@@ -102,3 +102,13 @@ if not generic:
                 # restart using new config
                 print 'did not use generic'
                 os.system('sudo shutdown -r now')
+
+# Check for tracker daemon startup
+if not os.path.exists('/etc/init.d/trackerd') or not open('/etc/init.d/trackerd', 'r').read() == open('/home/pi/2017VisionRecognition/trackerd', 'r').read() :
+    print 'updating tracker startup daemon'
+    os.system("sudo cp -f /home/pi/2017VisionRecognition/trackerd /etc/init.d/trackerd")
+    os.system("sudo chmod 755 /etc/init.d/trackerd")
+    os.system("sudo chmod 755 /home/pi/2017VisionRecognition/tracker.py")
+    os.system('sudo update-rc.d trackerd defaults')
+    os.system('sudo shutdown -r now')
+

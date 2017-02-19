@@ -91,6 +91,8 @@ class cCamera:
             
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             ret, frame = self.cap.retrieve()
+	
+	else: print('um waht')
         
         if self.save:
             queue.put(frame.copy())
