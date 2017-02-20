@@ -19,7 +19,6 @@ class cListen (threading.Thread):
         while data is not 'shutdown' and not shutdown: 
             try: data, addrs = self.sock.recvfrom(self.MSG_LEN)
             except: pass
-        print('Exiting cListen...')
 
 class RioSocket():
     def __init__(self):
@@ -31,7 +30,9 @@ class RioSocket():
         type = 1 if type == "goal" else 0
         isFound = 1 if isFound else 0
         message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
-        try: self.sock.sendto(message, (HOST, PORT))
+        try: 
+            self.sock.sendto(message, (HOST, PORT))
+           
         except: pass
 
     def recv(self):

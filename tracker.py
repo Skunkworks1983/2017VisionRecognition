@@ -43,7 +43,7 @@ if not HEADLESS: cv2.namedWindow('image')
 writing = False
 
 #various variables that are counters or placeholders for later
-lastKnown = ""
+lastKnown = "0"
 imageNum = 0
 
 #list of ms it took to iterate through (for fps management)
