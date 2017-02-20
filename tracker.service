@@ -5,7 +5,7 @@ After=multi-user.target
 [Service]
 Type=simple
 ExecStart=/usr/bin/python /home/pi/2017VisionRecognition/tracker.py
-Restart=on-abort
+Restart=no
  
 [Install]
 WantedBy=multi-user.target

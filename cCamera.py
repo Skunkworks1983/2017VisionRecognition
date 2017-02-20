@@ -45,6 +45,7 @@ class cCamera:
             self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
             self.stream = picamera.array.PiRGBArray(self.camera)
             self.camera.resolution = piResolution
+            time.sleep(10000)
                     
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             self.cap = cv2.VideoCapture(self.filename)
