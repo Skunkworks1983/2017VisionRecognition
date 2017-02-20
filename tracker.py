@@ -5,13 +5,27 @@
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
-import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket
+import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
-# where are we running? Get hostname then drop the "-pi" from gear-pi or goal-pi
+#####   CHANGE WORKING DIR  #####
+try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
+    for root, dirs, files in os.walk("/media/pi"):
+        for name in dirs:
+            workingDir = os.chdir(os.path.join(root, name))
+except: pass
+#################################
+
+#####     CHECK HOSTNAME    #####
 targetFromHostname = socket.gethostname()[:-3] 
 if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
     targetFromHostname = 'goal' # no GPIO header installed, choose a sane default
-
+#################################
+    
+#####      LOGGING INIT     #####  
+logName = socket.gethostname() + str(time.time())[5:-4] + '.log'  
+logging.basicConfig(filename=logName,level=logging.DEBUG)
+#################################
+    
 #####      ARG PARSING      #####
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="pi",
@@ -82,6 +96,7 @@ def checkInputs():
         imageNum = imageNum + 1
         
     elif cv2.waitKey(1) & 0xFF == ord('q'):
+        logging.info('Recieved shutdown key.')
         riosocket.shutdown()
         
     # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
@@ -90,26 +105,47 @@ def checkInputs():
     global writing
     
     if(data == "shutdown"):
+        logging.info('Recieved shutdown command.')
+        logging.info('Releasing camera...')
         cam.releaseCamera()
-        if writing: cam.releaseVideo()
+        logging.info('Success!')
+        if writing: 
+            cam.releaseVideo()
+            logging.info('Released video')
+        logging.info('Trust me.')
         os.system("sudo shutdown -h now")
 
     if(data == 'shutdownq'):
+        logging.info('Releasing camera...')
         cam.releaseCamera()
-        if writing: cam.releaseVideo()
+        logging.info('Success!')
+        if writing: 
+            logging.info('Releasing video...')
+            cam.releaseVideo()
+            logging.info('Success!')
+        logging.info('Until next time.')
         sys.exit()
         
     if(data == "auto"):
+        logging.info('Starting auto video...')
         cam.startVideoSave('auto' + target + time.time())
         writing = True
+        logging.info('Success!')
     
     if(data == "tele"):
-        if writing: cam.releaseVideo()
+        if writing: 
+            logging.info('Releasing auto video...')
+            cam.releaseVideo()
+            logging.info('Success!')
+        logging.info('Starting tele video...')
         cam.startVideoSave('tele' + target + time.time())
         writing = True
+        logging.info('Success!')
         
     if(saveVideo):
+        logging.info('Started saving dev video')
         cam.startVideoSave('dev' + target + time.time())
+        logging.info('Success!')
     
 #quick and dirty function to get milliseconds from the time module
 current_milli_time = lambda: int(round(time.time() * 1000))
