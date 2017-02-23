@@ -7,6 +7,8 @@ from __future__ import division #IMPORTANT: Float division will work as intended
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
+time.sleep(20)
+
 #####   CHANGE WORKING DIR  #####
 usbFound = False
 try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.

@@ -2,7 +2,7 @@
 # A class that is used to simplify and standardize the various methods of video streaming.
 # It also contains code to create a seperate thread that writes the recorded video to file.
 
-import cv2, argparse, threading, time, Queue, logging
+import cv2, argparse, threading, time, Queue, logging, sys
 try: import picamera, picamera.array
 except: pass
 
