@@ -50,6 +50,7 @@ class cCamera:
                 time.sleep(1)
             except:
                 logging.critical('Failed to create camera!')
+                sys.exit()
                     
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             try: self.cap = cv2.VideoCapture(self.filename)
