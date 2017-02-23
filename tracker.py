@@ -8,11 +8,18 @@ import numpy as np
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
 #####   CHANGE WORKING DIR  #####
+usbFound = False
 try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
-    for root, dirs, files in os.walk("/media/pi"):
-        for name in dirs:
-            workingDir = os.chdir(os.path.join(root, name))
-except: pass
+    for dirpath, dirs, files in os.walk("/media/pi"):
+        if usbFound: continue
+        for name in files:
+            if name == 'paella':
+                os.path.join(dirpath, name)
+                os.chdir('/media/pi/' + dirpath[2:]) # Remove the ./ characters from the directory path before setting our working dir there
+                usbFound = True
+                continue
+except: 
+    pass
 #################################
 
 #####     CHECK HOSTNAME    #####
