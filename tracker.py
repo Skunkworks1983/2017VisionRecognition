@@ -15,7 +15,7 @@ try: # I would do this after I know if I'm on a pi or not, but this has to happe
         for name in files:
             if name == 'paella':
                 os.path.join(dirpath, name)
-                os.chdir('/media/pi/' + dirpath[2:]) # Remove the ./ characters from the directory path before setting our working dir there
+                os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
                 usbFound = True
                 continue
 except: 
