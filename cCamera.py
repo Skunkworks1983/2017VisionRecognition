@@ -2,7 +2,7 @@
 # A class that is used to simplify and standardize the various methods of video streaming.
 # It also contains code to create a seperate thread that writes the recorded video to file.
 
-import cv2, argparse, threading, time, Queue
+import cv2, argparse, threading, time, Queue, logging, sys
 try: import picamera, picamera.array
 except: pass
 
@@ -42,16 +42,23 @@ class cCamera:
         self.saveStarted = False
         
         if(self.inputType.upper() == "PI" or self.inputType.upper() == "RASPI" or self.inputType.upper() == "PICAM"):
-            self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
-            self.stream = picamera.array.PiRGBArray(self.camera)
-            self.camera.resolution = piResolution
-            time.sleep(1)
+            logging.info('Creating pi camera...')
+            try:
+                self.camera = picamera.PiCamera()  # TODO look at cacheing this as with cap
+                self.stream = picamera.array.PiRGBArray(self.camera)
+                self.camera.resolution = piResolution
+                time.sleep(1)
+            except:
+                logging.critical('Failed to create camera!')
+                sys.exit()
                     
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
-            self.cap = cv2.VideoCapture(self.filename)
+            try: self.cap = cv2.VideoCapture(self.filename)
+            except: logging.critical('File does not exist!')
             
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
-            self.cap = cv2.VideoCapture(0)
+            try: self.cap = cv2.VideoCapture(0)
+            except: logging.critical('Failed to create webcam!')
 
     def getSysInfo(self):
         if cv2.__version__ == "3.2.0": version = 3
@@ -94,7 +101,7 @@ class cCamera:
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             ret, frame = self.cap.retrieve()
 	
-	else: print('um waht')
+        else: print('um waht')
         
         if self.save:
             queue.put(frame.copy())

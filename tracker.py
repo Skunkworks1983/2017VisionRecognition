@@ -5,34 +5,56 @@
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
-import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket
+import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
-# where are we running? Get hostname then drop the "-pi" from gear-pi or goal-pi
+#####   CHANGE WORKING DIR  #####
+print('Wait for the pi to finish turning on. If your not on pi, turn on some smooth jazz and wait twenty seconds')
+time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
+print('Done waiting')
+usbFound = False
+#try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
+for dirpath, dirs, files in os.walk("/media/pi"):
+    print('step')
+    if usbFound: continue
+    for name in files:
+        if name == 'paella':
+            os.path.join(dirpath, name)
+            os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
+            usbFound = True
+            continue
+#################################
+
+#####     CHECK HOSTNAME    #####
 targetFromHostname = socket.gethostname()[:-3] 
 if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
     targetFromHostname = 'goal' # no GPIO header installed, choose a sane default
-
+#################################
+    
+#####      LOGGING INIT     #####
+logName = socket.gethostname() + str(int(time.time())) + '.log'
+logging.basicConfig(filename=logName,level=logging.DEBUG)
+#################################
+    
 #####      ARG PARSING      #####
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--inputType", type=str, default="pi",
-    help="what input type should be used")
-ap.add_argument("-t", "--target", type=str, default=targetFromHostname,
-    help="what to detect")
-ap.add_argument("-m", "--minT_val", type=int, default=230,
-    help="how hard to threshold")
-ap.add_argument("-s", "--saveVideo", type=bool, default=False,
-    help="whether to save video or not")
-ap.add_argument("-d", "--DEBUG", type=bool, default=False,
-    help="whether to output debug vals")
-ap.add_argument("-e", "--HEADLESS", type=bool, default=True,
-    help="whether to display images")
+ap.add_argument("-i", "--inputType", type=str, default="pi", help="what input type should be used")
+ap.add_argument("-t", "--target", type=str, default=targetFromHostname, help="what to detect")
+ap.add_argument("-m", "--minT_val", type=int, default=230, help="how hard to threshold")
+ap.add_argument("-s", "--saveVideo", type=str, default='False', help="whether to save video or not")
+ap.add_argument("-d", "--DEBUG", type=str, default='False', help="whether to output debug vals")
+ap.add_argument("-e", "--HEADLESS", type=str, default='True', help="whether to display images") # Passing anything is how you set it to true, 
 args = vars(ap.parse_args())
 inputType = args['inputType'] 
 target = args['target']
 minT_val = args['minT_val']
-saveVideo = args['saveVideo']
-DEBUG = args['DEBUG']
-HEADLESS = args['HEADLESS']
+if args['saveVideo'] is 'True': saveVideo = True # Grumble grumble bad documentation grumble grumble
+else: saveVideo = False
+if args['DEBUG'] is 'True': DEBUG = True
+else: DEBUG = False
+if args['HEADLESS'] is 'True': HEADLESS = True
+else: HEADLESS = False
+        
+print(args)
 #################################
 
 #####  VARIOUS DECLERATION  #####
@@ -75,13 +97,15 @@ def checkInputs():
     fps = 1 / sPerFrame
     print("FPS: " + str(fps))'''
     
-    if not HEADLESS: cv2.imshow('image', frame)
+    if not HEADLESS:
+        cv2.imshow('image', frame)
     
     if DEBUG and cv2.waitKey(1) & 0xFF == ord(' '):
         cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
         imageNum = imageNum + 1
         
     elif cv2.waitKey(1) & 0xFF == ord('q'):
+        logging.info('Recieved shutdown key.')
         riosocket.shutdown()
         
     # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
@@ -90,26 +114,47 @@ def checkInputs():
     global writing
     
     if(data == "shutdown"):
+        logging.info('Recieved shutdown command.')
+        logging.info('Releasing camera...')
         cam.releaseCamera()
-        if writing: cam.releaseVideo()
+        logging.info('Success!')
+        if writing: 
+            cam.releaseVideo()
+            logging.info('Released video')
+        logging.info('Trust me.')
         os.system("sudo shutdown -h now")
 
     if(data == 'shutdownq'):
+        logging.info('Releasing camera...')
         cam.releaseCamera()
-        if writing: cam.releaseVideo()
+        logging.info('Success!')
+        if writing: 
+            logging.info('Releasing video...')
+            cam.releaseVideo()
+            logging.info('Success!')
+        logging.info('Until next time.')
         sys.exit()
         
     if(data == "auto"):
+        logging.info('Starting auto video...')
         cam.startVideoSave('auto' + target + time.time())
         writing = True
+        logging.info('Success!')
     
     if(data == "tele"):
-        if writing: cam.releaseVideo()
+        if writing: 
+            logging.info('Releasing auto video...')
+            cam.releaseVideo()
+            logging.info('Success!')
+        logging.info('Starting tele video...')
         cam.startVideoSave('tele' + target + time.time())
         writing = True
+        logging.info('Success!')
         
     if(saveVideo):
+        logging.info('Started saving dev video')
         cam.startVideoSave('dev' + target + time.time())
+        logging.info('Success!')
     
 #quick and dirty function to get milliseconds from the time module
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -132,6 +177,7 @@ while(True):
     t0 = current_milli_time()
 
     # Capture frame-by-frame
+    if DEBUG: print('Getting frame')
     frame = cam.nextFrame()
     
     #if the image is not tall, skinny, and is a goal cam flip it
@@ -204,7 +250,8 @@ while(True):
                             print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
                             if DEBUG > 1 and (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]): print 'To the left'
                             else: print 'To the right '
-                        xProportional = map(int(s1box[0][0]), width)
+                        if target == 'goal': xProportional = map(int(s1box[0][0]), width)
+                        else: xProportional = map(int((s1box[0][0] + s2box[0][0]) / 2), width)
                         lastKnown = xProportional
                         if target == "goal":
                             riosocket.send("goal", True, str(xProportional))
