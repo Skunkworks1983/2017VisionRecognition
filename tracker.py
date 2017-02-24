@@ -7,21 +7,21 @@ from __future__ import division #IMPORTANT: Float division will work as intended
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
-time.sleep(20)
-
 #####   CHANGE WORKING DIR  #####
+print('Wait for the pi to finish turning on. If your not on pi, turn on some smooth jazz and wait twenty seconds')
+time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
+print('Done waiting')
 usbFound = False
-try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
-    for dirpath, dirs, files in os.walk("/media/pi"):
-        if usbFound: continue
-        for name in files:
-            if name == 'paella':
-                os.path.join(dirpath, name)
-                os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
-                usbFound = True
-                continue
-except: 
-    pass
+#try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
+for dirpath, dirs, files in os.walk("/media/pi"):
+    print('step')
+    if usbFound: continue
+    for name in files:
+        if name == 'paella':
+            os.path.join(dirpath, name)
+            os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
+            usbFound = True
+            continue
 #################################
 
 #####     CHECK HOSTNAME    #####
@@ -30,32 +30,31 @@ if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
     targetFromHostname = 'goal' # no GPIO header installed, choose a sane default
 #################################
     
-#####      LOGGING INIT     #####  
-logName = socket.gethostname() + str(time.time())[5:-4] + '.log'  
+#####      LOGGING INIT     #####
+logName = socket.gethostname() + str(int(time.time())) + '.log'
 logging.basicConfig(filename=logName,level=logging.DEBUG)
 #################################
     
 #####      ARG PARSING      #####
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--inputType", type=str, default="pi",
-    help="what input type should be used")
-ap.add_argument("-t", "--target", type=str, default=targetFromHostname,
-    help="what to detect")
-ap.add_argument("-m", "--minT_val", type=int, default=230,
-    help="how hard to threshold")
-ap.add_argument("-s", "--saveVideo", type=bool, default=False,
-    help="whether to save video or not")
-ap.add_argument("-d", "--DEBUG", type=bool, default=False,
-    help="whether to output debug vals")
-ap.add_argument("-e", "--HEADLESS", type=bool, default=True,
-    help="whether to display images")
+ap.add_argument("-i", "--inputType", type=str, default="pi", help="what input type should be used")
+ap.add_argument("-t", "--target", type=str, default=targetFromHostname, help="what to detect")
+ap.add_argument("-m", "--minT_val", type=int, default=230, help="how hard to threshold")
+ap.add_argument("-s", "--saveVideo", type=str, default='False', help="whether to save video or not")
+ap.add_argument("-d", "--DEBUG", type=str, default='False', help="whether to output debug vals")
+ap.add_argument("-e", "--HEADLESS", type=str, default='True', help="whether to display images") # Passing anything is how you set it to true, 
 args = vars(ap.parse_args())
 inputType = args['inputType'] 
 target = args['target']
 minT_val = args['minT_val']
-saveVideo = args['saveVideo']
-DEBUG = args['DEBUG']
-HEADLESS = args['HEADLESS']
+if args['saveVideo'] is 'True': saveVideo = True # Grumble grumble bad documentation grumble grumble
+else: saveVideo = False
+if args['DEBUG'] is 'True': DEBUG = True
+else: DEBUG = False
+if args['HEADLESS'] is 'True': HEADLESS = True
+else: HEADLESS = False
+        
+print(args)
 #################################
 
 #####  VARIOUS DECLERATION  #####
@@ -98,7 +97,8 @@ def checkInputs():
     fps = 1 / sPerFrame
     print("FPS: " + str(fps))'''
     
-    if not HEADLESS: cv2.imshow('image', frame)
+    if not HEADLESS:
+        cv2.imshow('image', frame)
     
     if DEBUG and cv2.waitKey(1) & 0xFF == ord(' '):
         cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
@@ -177,6 +177,7 @@ while(True):
     t0 = current_milli_time()
 
     # Capture frame-by-frame
+    if DEBUG: print('Getting frame')
     frame = cam.nextFrame()
     
     #if the image is not tall, skinny, and is a goal cam flip it
