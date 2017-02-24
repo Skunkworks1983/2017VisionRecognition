@@ -250,7 +250,8 @@ while(True):
                             print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
                             if DEBUG > 1 and (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]): print 'To the left'
                             else: print 'To the right '
-                        xProportional = map(int(s1box[0][0]), width)
+                        if target == 'goal': xProportional = map(int(s1box[0][0]), width)
+                        else: xProportional = map(int((s1box[0][0] + s2box[0][0]) / 2), width)
                         lastKnown = xProportional
                         if target == "goal":
                             riosocket.send("goal", True, str(xProportional))
