@@ -31,7 +31,7 @@ if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
 #################################
     
 #####      LOGGING INIT     #####
-logName = socket.gethostname() + str(int(time.time())) + '.log'
+logName = strftime("%m-%d-%H-%M-%S", gmtime()) + socket.gethostname() + '.log'
 logging.basicConfig(filename=logName,level=logging.DEBUG)
 #################################
     
