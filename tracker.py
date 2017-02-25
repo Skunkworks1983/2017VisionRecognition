@@ -6,8 +6,6 @@
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
-try: import winsound
-except: pass
 
 #####     CHECK HOSTNAME    #####
 targetFromHostname = socket.gethostname()[:-3] 
@@ -33,7 +31,6 @@ if args['DEBUG'] is 'True': DEBUG = True
 else: DEBUG = False
 if args['HEADLESS'] is 'True': HEADLESS = True
 else: HEADLESS = False
-        
 print(args)
 #################################
 
@@ -43,7 +40,6 @@ if inputType == 'pi':
     time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
     print('Done waiting')
     usbFound = False
-    #try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
     for dirpath, dirs, files in os.walk("/media/pi"):
         print('step')
         if usbFound: continue
@@ -53,10 +49,11 @@ if inputType == 'pi':
                 os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
                 usbFound = True
                 continue
+else: os.chdir('./Logs')
 #################################
     
 #####      LOGGING INIT     #####
-logName = time.strftime("%m-%d-%H-%M-%S", time.gmtime()) + socket.gethostname() + '.log'
+logName = time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + socket.gethostname() + '.log'
 logging.basicConfig(filename=logName,level=logging.DEBUG)
 #################################
 
@@ -79,26 +76,24 @@ if DEBUG: np.set_printoptions(threshold=np.nan)
 #################################
 
 #####       FUNCTIONS       #####
-#self explanatory
-def pointInContour(pt, cnt):
-    return cv2.pointPolygonTest(cnt, pt, True) > 0
-
 #map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
 def map(val, width):
     return ((2*val/width) - 1)
 
 def checkInputs():
-    '''global times
+    global HEADLESS
+    if not HEADLESS:
+        global times
 
-    t1 = current_milli_time()
-    
-    tD = t1 - t0
-    times.append(tD)
-    times = times[-20:]
-    avgMsPerFrame = sum(times)/len(times)
-    sPerFrame = avgMsPerFrame / 1000
-    fps = 1 / sPerFrame
-    print("FPS: " + str(fps))'''
+        t1 = current_milli_time()
+        
+        tD = t1 - t0
+        times.append(tD)
+        times = times[-20:]
+        avgMsPerFrame = sum(times)/len(times)
+        sPerFrame = avgMsPerFrame / 1000
+        fps = 1 / sPerFrame
+        print("FPS: " + str(fps))
     
     if not HEADLESS:
         cv2.imshow('image', frame)
@@ -169,7 +164,7 @@ riosocket = riosocket.RioSocket()
 
 ##### CAMERA INITIALIZATION #####
 #Define test file and cam object based on argument
-fileName = "./test16.h264" #file of the video to load
+fileName = "./test56.h264" #file of the video to load
 cam = cCamera.cCamera(inputType, fileName)
 version = cam.getSysInfo() # Not technically part of camera, but cCamera will always be where opencv is, so it's good to have the version function there
 #################################

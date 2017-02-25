@@ -4,7 +4,7 @@
 
 import cv2, argparse, threading, time, Queue, logging, sys
 try: import picamera, picamera.array
-except: pass
+except ImportError: pass
 
 lock = threading.Lock()
 queue = Queue.Queue()
@@ -49,16 +49,17 @@ class cCamera:
                 self.camera.resolution = piResolution
                 time.sleep(1)
             except:
-                logging.critical('Failed to create camera!')
-                sys.exit()
-                    
+                logging.critical('Failed to create camera: ' + str(sys.exc_info()[0]))
+                raise
+                
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
-            try: self.cap = cv2.VideoCapture(self.filename)
-            except: logging.critical('File does not exist!')
+            self.cap = cv2.VideoCapture(self.filename)
             
         elif(self.inputType.upper() == "WEBCAM" or self.inputType.upper() == "LAPTOP"):
             try: self.cap = cv2.VideoCapture(0)
-            except: logging.critical('Failed to create webcam!')
+            except: 
+                logging.critical('Failed to create webcam: ' + str(sys.exc_info()[0]))
+                raise
 
     def getSysInfo(self):
         if cv2.__version__ == "3.2.0": version = 3
@@ -76,7 +77,7 @@ class cCamera:
         
     def releaseCamera(self):
         try: self.cap.release()
-        except: pass
+        except: logging.info('Exception in self.cap.release:' + str(sys.exc_info()[0]))
     
     def releaseVideo(self):
         global cleaningUp, doneCleaning
