@@ -6,35 +6,15 @@
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
-
-#####   CHANGE WORKING DIR  #####
-print('Wait for the pi to finish turning on. If your not on pi, turn on some smooth jazz and wait twenty seconds')
-time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
-print('Done waiting')
-usbFound = False
-#try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
-for dirpath, dirs, files in os.walk("/media/pi"):
-    print('step')
-    if usbFound: continue
-    for name in files:
-        if name == 'paella':
-            os.path.join(dirpath, name)
-            os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
-            usbFound = True
-            continue
-#################################
+try: import winsound
+except: pass
 
 #####     CHECK HOSTNAME    #####
 targetFromHostname = socket.gethostname()[:-3] 
 if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
     targetFromHostname = 'goal' # no GPIO header installed, choose a sane default
 #################################
-    
-#####      LOGGING INIT     #####
-logName = strftime("%m-%d-%H-%M-%S", gmtime()) + socket.gethostname() + '.log'
-logging.basicConfig(filename=logName,level=logging.DEBUG)
-#################################
-    
+
 #####      ARG PARSING      #####
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="pi", help="what input type should be used")
@@ -44,7 +24,7 @@ ap.add_argument("-s", "--saveVideo", type=str, default='False', help="whether to
 ap.add_argument("-d", "--DEBUG", type=str, default='False', help="whether to output debug vals")
 ap.add_argument("-e", "--HEADLESS", type=str, default='True', help="whether to display images") # Passing anything is how you set it to true, 
 args = vars(ap.parse_args())
-inputType = args['inputType'] 
+inputType = args['inputType']
 target = args['target']
 minT_val = args['minT_val']
 if args['saveVideo'] is 'True': saveVideo = True # Grumble grumble bad documentation grumble grumble
@@ -55,6 +35,29 @@ if args['HEADLESS'] is 'True': HEADLESS = True
 else: HEADLESS = False
         
 print(args)
+#################################
+
+#####   CHANGE WORKING DIR  #####
+if inputType == 'pi':
+    print('Wait for the pi to finish turning on. If your not on pi, then why did you set input type to pi? Dummy.')
+    time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
+    print('Done waiting')
+    usbFound = False
+    #try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
+    for dirpath, dirs, files in os.walk("/media/pi"):
+        print('step')
+        if usbFound: continue
+        for name in files:
+            if name == 'paella':
+                os.path.join(dirpath, name)
+                os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
+                usbFound = True
+                continue
+#################################
+    
+#####      LOGGING INIT     #####
+logName = time.strftime("%m-%d-%H-%M-%S", time.gmtime()) + socket.gethostname() + '.log'
+logging.basicConfig(filename=logName,level=logging.DEBUG)
 #################################
 
 #####  VARIOUS DECLERATION  #####
