@@ -43,6 +43,7 @@ ap.add_argument("-m", "--minT_val", type=int, default=230, help="how hard to thr
 ap.add_argument("-s", "--saveVideo", type=str, default='False', help="whether to save video or not")
 ap.add_argument("-d", "--DEBUG", type=str, default='False', help="whether to output debug vals")
 ap.add_argument("-e", "--HEADLESS", type=str, default='True', help="whether to display images") # Passing anything is how you set it to true, 
+ap.add_argument("-v", "--videosend", type=str, default='False', help="whether to send vid over udp")
 args = vars(ap.parse_args())
 inputType = args['inputType'] 
 target = args['target']
@@ -53,7 +54,8 @@ if args['DEBUG'] is 'True': DEBUG = True
 else: DEBUG = False
 if args['HEADLESS'] is 'True': HEADLESS = True
 else: HEADLESS = False
-        
+if args['videosend'] is 'True': videosend = True
+else: videosend = False
 print(args)
 #################################
 
@@ -85,7 +87,9 @@ def map(val, width):
     return ((2*val/width) - 1)
 
 def checkInputs():
-    '''global times
+    global HEADLESS
+    if DEBUG:
+        global times
 
     t1 = current_milli_time()
     
@@ -107,6 +111,9 @@ def checkInputs():
     elif cv2.waitKey(1) & 0xFF == ord('q'):
         logging.info('Recieved shutdown key.')
         riosocket.shutdown()
+        
+    if videosend:
+        riosocket.sendVid(frame)
         
     # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
     data = riosocket.recv()

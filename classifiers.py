@@ -2,6 +2,9 @@
 
 import math
 
+passed = []
+values = []
+
 class cClassifier():
     def __init__(self):
         self.gearClassifiers = [matchingRotation, gearAreaRatio, gearBetweenHeightRatio, minAreaDiff] #set the function names of classifiers to use here
@@ -16,27 +19,29 @@ class cClassifier():
             classifiers = self.gearClassifiers
             SIGMAS = self.GEAR_SIGMAS
         passFail = []
-        #if not getVal:
-        if True: #What even is this? TODO Eli pls fix
-            for k, v in enumerate(classifiers):
-                if not v(s1, s2, SIGMAS[k], getVal): #call the respective function
-                    passFail.append(False)
-                    return False
-                    #print(passFail)
-                passFail.append(True)
-            return True
-        else:
-            values = []
-            for k, v in enumerate(classifiers):
-                values.append(v(s1, s2, SIGMAS[k], True))
-            return values
+        for k, v in enumerate(classifiers):
+            result, value = v(s1, s2, SIGMAS[k], getVal) #call the respective function
+            print(str(v) + ' returned ' + str(result))
+            print('with a value of ' + str(value))
+            if not result:
+                passFail.append(False)
+                print('Not a ' + str(target))
+                return False
+                #print(passFail)
+            passFail.append(True)
+        print('Is a ' + str(target))
+        return True
+        
+    def getValues(self):
+        return(passed, values)
 
 def matchingRotation(s1, s2, sigma, getVal):
     angleSigma = sigma
+    result = s1[2] < s2[2] + angleSigma and s1[2] > s2[2] - angleSigma
     if not getVal:
-        return s1[2] < s2[2] + angleSigma and s1[2] > s2[2] - angleSigma
+        return (result, s1[2] - s2[2])
     else:
-        return s1[2]/(s2[2] + .001)
+        return result
             
 def distance(x1, y1, x2, y2):
     distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
@@ -50,10 +55,11 @@ def goalAreaRatio(s1, s2, sigma, getVal):
     area2 = s2[1][0]*s2[1][1]
     areaRatio = area1/area2
     areaSigma = sigma
+    result = areaRatio < 1.5 + areaSigma and areaRatio > 1.5 - areaSigma
     if not getVal:
-        return areaRatio < 1.5 + areaSigma and areaRatio > 1.5 - areaSigma
+        return (result, areaRatio)
     else:
-        return areaRatio
+        return result
         
 def goalBetweenHeightRatio(s1, s2, sigma, getVal):
     betweenHeightSigma = sigma
@@ -61,8 +67,9 @@ def goalBetweenHeightRatio(s1, s2, sigma, getVal):
     betweenHeightRatio = centerDistance - (0.5*(s2[1][1]+s1[1][1]))/s1[1][1]
     maxRatio = 30
     minRatio = 0.5
+    result = betweenHeightRatio < maxRatio and betweenHeightRatio > minRatio
     if not getVal:
-        return betweenHeightRatio < maxRatio and betweenHeightRatio > minRatio
+        return (result , betweenHeightRatio)
     else:
         return betweenHeightRatio
            
@@ -70,15 +77,17 @@ def minAreaDiff(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
     area2 = s2[1][0]*s2[1][1]
     if getVal: print 'Area diff: ' + str(area1 - area2)
-    return area1 - area2 < sigma and area1 - area2 > 0 - sigma
+    result = area1 - area2 < sigma and area1 - area2 > 0 - sigma
+    return(result, area1 - area2)
     
 def gearAreaRatio(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
     area2 = s2[1][0]*s2[1][1]
     areaRatio = area1/area2
     areaSigma = sigma
+    result = areaRatio < 1 + areaSigma and areaRatio > 1 - areaSigma
     if not getVal:
-        return areaRatio < 1 + areaSigma and areaRatio > 1 - areaSigma
+        return (result, areaRatio)
     else:
         return areaRatio
  
@@ -87,11 +96,8 @@ def gearBetweenHeightRatio(s1, s2, sigma, getVal):
     betweenHeightRatio = 0.5*(s2[1][1]+s1[1][1])/centerDistance
     maxRatio = 1
     minRatio = .1
-    if getVal: print 'Height ratio: ' + str(betweenHeightRatio)
-    if betweenHeightRatio < maxRatio and betweenHeightRatio > - maxRatio and (betweenHeightRatio > minRatio or betweenHeightRatio < - minRatio):
-        return True
-    else:
-        return False
+    result = betweenHeightRatio < maxRatio and betweenHeightRatio > - maxRatio and (betweenHeightRatio > minRatio or betweenHeightRatio < - minRatio)
+    return(result, betweenHeightRatio)
             
 def centersToTopRatio(s1, s2, sigma, getVal):
     heightSigma = sigma

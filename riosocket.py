@@ -1,8 +1,9 @@
 #RioSocket.py
 #Formats data to be sent of to cMessenger
-import socket, os, threading
+import numpy as np
+import socket, os, threading, cv2, time
 
-HOST = "10.19.83.2"
+HOST = "localhost"
 PORT = 5802 # TODO port cannot be hardcoded.
 data = ''
 shutdown = False
@@ -32,8 +33,14 @@ class RioSocket():
         message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
         try: 
             self.sock.sendto(message, (HOST, PORT))
-           
         except: pass
+        
+    def sendVid(self, frame):
+        frame = cv2.resize(frame, (0,0), fx=0.2, fy=0.2)
+        frame = frame[:,:,0]
+        frameStr = cv2.imencode('.jpg', frame)[1].tostring()
+        print(len(frameStr))
+        self.sock.sendto(frameStr, (HOST, PORT)) 
 
     def recv(self):
         global data
