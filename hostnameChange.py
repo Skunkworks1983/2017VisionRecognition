@@ -77,7 +77,7 @@ else:
 	generic = True
 	
 # turn off wifi
-#os.system('sudo ifconfig wlan0 down')
+os.system('sudo ifconfig wlan0 down')
 
 # do we need to update IP and/or hostname?
 if not generic:

@@ -36,12 +36,7 @@ targetFromHostname = socket.gethostname()[:-3]
 if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
     targetFromHostname = 'goal' # no GPIO header installed, choose a sane default
 #################################
-    
-#####      LOGGING INIT     #####
-logName = socket.gethostname() + str(int(time.time())) + '.log'
-logging.basicConfig(filename=logName,level=logging.DEBUG)
-#################################
-    
+
 #####      ARG PARSING      #####
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="pi", help="what input type should be used")
@@ -52,7 +47,7 @@ ap.add_argument("-d", "--DEBUG", type=str, default='False', help="whether to out
 ap.add_argument("-e", "--HEADLESS", type=str, default='True', help="whether to display images") # Passing anything is how you set it to true, 
 ap.add_argument("-v", "--videosend", type=str, default='False', help="whether to send vid over udp")
 args = vars(ap.parse_args())
-inputType = args['inputType'] 
+inputType = args['inputType']
 target = args['target']
 minT_val = args['minT_val']
 if args['saveVideo'] is 'True': saveVideo = True # Grumble grumble bad documentation grumble grumble
@@ -64,6 +59,29 @@ else: HEADLESS = False
 if args['videosend'] is 'True': videosend = True
 else: videosend = False
 print(args)
+#################################
+
+#####   CHANGE WORKING DIR  #####
+if inputType == 'pi':
+    print('Wait for the pi to finish turning on. If your not on pi, then why did you set input type to pi? Dummy.')
+    time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
+    print('Done waiting')
+    usbFound = False
+    for dirpath, dirs, files in os.walk("/media/pi"):
+        print('step')
+        if usbFound: continue
+        for name in files:
+            if name == 'paella':
+                os.path.join(dirpath, name)
+                os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
+                usbFound = True
+                continue
+else: os.chdir('./Logs')
+#################################
+    
+#####      LOGGING INIT     #####
+logName = time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + socket.gethostname() + '.log'
+logging.basicConfig(filename=logName,level=logging.DEBUG)
 #################################
 
 #####  VARIOUS DECLERATION  #####
@@ -85,10 +103,6 @@ if DEBUG: np.set_printoptions(threshold=np.nan)
 #################################
 
 #####       FUNCTIONS       #####
-#self explanatory
-def pointInContour(pt, cnt):
-    return cv2.pointPolygonTest(cnt, pt, True) > 0
-
 #map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
 def map(val, width):
     return ((2*val/width) - 1)
@@ -180,7 +194,7 @@ riosocket = riosocket.RioSocket()
 
 ##### CAMERA INITIALIZATION #####
 #Define test file and cam object based on argument
-fileName = "./test16.h264" #file of the video to load
+fileName = "./test56.h264" #file of the video to load
 cam = cCamera.cCamera(inputType, fileName)
 version = cam.getSysInfo() # Not technically part of camera, but cCamera will always be where opencv is, so it's good to have the version function there
 #################################
