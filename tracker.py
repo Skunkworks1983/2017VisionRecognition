@@ -7,30 +7,6 @@ from __future__ import division #IMPORTANT: Float division will work as intended
 import numpy as np 
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
-#####   CHANGE WORKING DIR  #####
-print('Wait for the pi to finish turning on. If your not on pi, turn on some smooth jazz and wait twenty seconds')
-time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
-print('Done waiting')
-usbFound = False
-#try: # I would do this after I know if I'm on a pi or not, but this has to happen before any outputs.
-for dirpath, dirs, files in os.walk("/media/pi"):
-    print('step')
-    if usbFound: continue
-    for name in files:
-        if name == 'paella':
-            os.path.join(dirpath, name)
-            os.chdir(dirpath)
-            usbFound = True
-            continue
-    if usbFound == True: continue
-    for name in dirs:
-        if name == 'System Volume Information':
-            os.path.join(dirpath, name)
-            os.chdir(dirpath)
-            usbFound = True
-            continue
-#################################
-
 #####     CHECK HOSTNAME    #####
 targetFromHostname = socket.gethostname()[:-3] 
 if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
@@ -63,19 +39,22 @@ print(args)
 
 #####   CHANGE WORKING DIR  #####
 if inputType == 'pi':
-    print('Wait for the pi to finish turning on. If your not on pi, then why did you set input type to pi? Dummy.')
-    time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
-    print('Done waiting')
-    usbFound = False
     for dirpath, dirs, files in os.walk("/media/pi"):
         print('step')
         if usbFound: continue
         for name in files:
             if name == 'paella':
                 os.path.join(dirpath, name)
-                os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
+                os.chdir(dirpath)
                 usbFound = True
                 continue
+        if usbFound == True: continue
+        for name in dirs:
+            if name == 'System Volume Information':
+                os.path.join(dirpath, name)
+                os.chdir(dirpath)
+                usbFound = True
+                continue    
 else: os.chdir('./Logs')
 #################################
     
