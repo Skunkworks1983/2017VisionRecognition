@@ -189,7 +189,7 @@ current_milli_time = lambda: int(round(time.time() * 1000))
 #################################
 
 ##### SOCKET INITIALIZATION #####
-riosocket = riosocket.RioSocket()
+riosocket = riosocket.RioSocket(target)
 #################################
 
 ##### CAMERA INITIALIZATION #####

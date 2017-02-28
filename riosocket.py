@@ -3,8 +3,10 @@
 import numpy as np
 import socket, os, threading, cv2, time
 
-HOST = "localhost"
-PORT = 5802 # TODO port cannot be hardcoded.
+HOST = "10.19.83.2"
+TURRETPORT = 5802 # TODO port cannot be hardcoded.
+GEARPORT = 5800
+DRIVERPORT = 5804
 data = ''
 shutdown = False
 
@@ -22,7 +24,10 @@ class cListen (threading.Thread):
             except: pass
 
 class RioSocket():
-    def __init__(self):
+    def __init__(self, pi):
+        if pi = 'gear': PORT = GEARPORT
+        elif target = 'goal': PORT = TURRETPORT
+        else: logging.critical('Unknown target type! Cannot send target pos data!')
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         thread = cListen()
         thread.start()
@@ -40,7 +45,7 @@ class RioSocket():
         frame = frame[:,:,0]
         frameStr = cv2.imencode('.jpg', frame)[1].tostring()
         print(len(frameStr))
-        self.sock.sendto(frameStr, (HOST, PORT)) 
+        self.sock.sendto(frameStr, (HOST, DRIVERPORT)) 
 
     def recv(self):
         global data
