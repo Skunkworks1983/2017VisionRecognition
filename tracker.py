@@ -22,6 +22,11 @@ for dirpath, dirs, files in os.walk("/media/pi"):
             os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
             usbFound = True
             continue
+    if usbFound == True: continue
+    for name in dirs:
+        if name == 'System Volume Information':
+            usbFound = True
+            continue
 #################################
 
 #####     CHECK HOSTNAME    #####
