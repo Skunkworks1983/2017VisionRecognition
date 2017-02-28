@@ -19,12 +19,14 @@ for dirpath, dirs, files in os.walk("/media/pi"):
     for name in files:
         if name == 'paella':
             os.path.join(dirpath, name)
-            os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
+            os.chdir(dirpath)
             usbFound = True
             continue
     if usbFound == True: continue
     for name in dirs:
         if name == 'System Volume Information':
+            os.path.join(dirpath, name)
+            os.chdir(dirpath)
             usbFound = True
             continue
 #################################
@@ -96,15 +98,15 @@ def checkInputs():
     if DEBUG:
         global times
 
-    t1 = current_milli_time()
-    
-    tD = t1 - t0
-    times.append(tD)
-    times = times[-20:]
-    avgMsPerFrame = sum(times)/len(times)
-    sPerFrame = avgMsPerFrame / 1000
-    fps = 1 / sPerFrame
-    print("FPS: " + str(fps))'''
+        t1 = current_milli_time()
+        
+        tD = t1 - t0
+        times.append(tD)
+        times = times[-20:]
+        avgMsPerFrame = sum(times)/len(times)
+        sPerFrame = avgMsPerFrame / 1000
+        fps = 1 / sPerFrame
+        print("FPS: " + str(fps))
     
     if not HEADLESS:
         cv2.imshow('image', frame)

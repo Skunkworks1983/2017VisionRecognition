@@ -21,15 +21,16 @@ class cClassifier():
         passFail = []
         for k, v in enumerate(classifiers):
             result, value = v(s1, s2, SIGMAS[k], getVal) #call the respective function
-            print(str(v) + ' returned ' + str(result))
-            print('with a value of ' + str(value))
+            if getVal:
+                print(str(v) + ' returned ' + str(result))
+                print('with a value of ' + str(value))
             if not result:
                 passFail.append(False)
-                print('Not a ' + str(target))
+                if getVal: print('Not a ' + str(target))
                 return False
                 #print(passFail)
             passFail.append(True)
-        print('Is a ' + str(target))
+        if getVal: print('Is a ' + str(target))
         return True
         
     def getValues(self):
