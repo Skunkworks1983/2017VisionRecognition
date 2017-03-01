@@ -8,12 +8,14 @@ import numpy as np
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
 #####     CHECK HOSTNAME    #####
+# We need to know if we're on the gear pi or the goal pi
 targetFromHostname = socket.gethostname()[:-3] 
 if targetFromHostname != 'gear' and targetFromHostname != 'goal' :
     targetFromHostname = 'goal' # no GPIO header installed, choose a sane default
 #################################
 
 #####      ARG PARSING      #####
+# If your running from a command line its useful to be able to put in some debug options.
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="pi", help="what input type should be used")
 ap.add_argument("-t", "--target", type=str, default=targetFromHostname, help="what to detect")
@@ -21,43 +23,52 @@ ap.add_argument("-m", "--minT_val", type=int, default=230, help="how hard to thr
 ap.add_argument("-s", "--saveVideo", type=str, default='False', help="whether to save video or not")
 ap.add_argument("-d", "--DEBUG", type=str, default='False', help="whether to output debug vals")
 ap.add_argument("-e", "--HEADLESS", type=str, default='True', help="whether to display images") # Passing anything is how you set it to true, 
+ap.add_argument("-v", "--videosend", type=str, default='False', help="whether to send vid over udp")
 args = vars(ap.parse_args())
 inputType = args['inputType']
 target = args['target']
 minT_val = args['minT_val']
-if args['saveVideo'] is 'True': saveVideo = True # Grumble grumble bad documentation grumble grumble
+if args['saveVideo'] is 'True': saveVideo = True # Arg parse actually does everything in strings, so we have to process bools ourselves
 else: saveVideo = False
-if args['DEBUG'] is 'True': DEBUG = True
+if args['DEBUG'] == 'True': DEBUG = True
 else: DEBUG = False
-if args['HEADLESS'] is 'True': HEADLESS = True
+if args['HEADLESS'] == 'True': HEADLESS = True
 else: HEADLESS = False
+if args['videosend'] is 'True': videosend = True
+else: videosend = False
 print(args)
 #################################
 
 #####   CHANGE WORKING DIR  #####
+# We want to put our logs and videos on any usb devices attached to the pis.
 if inputType == 'pi':
-    print('Wait for the pi to finish turning on. If your not on pi, then why did you set input type to pi? Dummy.')
-    time.sleep(20) # DO NOT DISABLE, PI'S WILL NOT LOG DURING COMPETIONS WITHOUT
-    print('Done waiting')
-    usbFound = False
     for dirpath, dirs, files in os.walk("/media/pi"):
         print('step')
         if usbFound: continue
         for name in files:
             if name == 'paella':
                 os.path.join(dirpath, name)
-                os.chdir(dirpath) # Remove the ./ characters from the directory path before setting our working dir there
+                os.chdir(dirpath)
                 usbFound = True
                 continue
-else: os.chdir('./Logs')
+        if usbFound == True: continue
+        for name in dirs:
+            if name == 'System Volume Information':
+                os.path.join(dirpath, name)
+                os.chdir(dirpath)
+                usbFound = True
+                continue    
+else: os.chdir('./Logs') # Otherwise it's nice to not clutter up the repo, so stick logs in a differnt directory
 #################################
     
 #####      LOGGING INIT     #####
+# If we're not on command line, it's very useful to have logs of what happened
 logName = time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + socket.gethostname() + '.log'
 logging.basicConfig(filename=logName,level=logging.DEBUG)
 #################################
 
 #####  VARIOUS DECLERATION  #####
+# Things the while loop relies on
 classifier = classifiers.cClassifier()
 
 if not HEADLESS: cv2.namedWindow('image')
@@ -76,13 +87,14 @@ if DEBUG: np.set_printoptions(threshold=np.nan)
 #################################
 
 #####       FUNCTIONS       #####
+# Various functions to be used in other parts of the code
 #map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
 def map(val, width):
     return ((2*val/width) - 1)
 
-def checkInputs():
+def cleanup(): # Run this at the end of the while loop, or when it is terminated early
     global HEADLESS
-    if not HEADLESS:
+    if DEBUG: # For displaying fps
         global times
 
         t1 = current_milli_time()
@@ -106,6 +118,9 @@ def checkInputs():
         logging.info('Recieved shutdown key.')
         riosocket.shutdown()
         
+    if videosend: # Send video over udp to the roborio
+        riosocket.sendVid(frame)
+        
     # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
     data = riosocket.recv()
 
@@ -122,7 +137,7 @@ def checkInputs():
         logging.info('Trust me.')
         os.system("sudo shutdown -h now")
 
-    if(data == 'shutdownq'):
+    if(data == 'shutdownq'): # If you recieve a q, you dont want to shutdown the computer.
         logging.info('Releasing camera...')
         cam.releaseCamera()
         logging.info('Success!')
@@ -130,12 +145,12 @@ def checkInputs():
             logging.info('Releasing video...')
             cam.releaseVideo()
             logging.info('Success!')
-        logging.info('Until next time.')
+        logging.info('Exiting Program.')
         sys.exit()
         
-    if(data == "auto"):
+    if(data == "auto"): # For recording video
         logging.info('Starting auto video...')
-        cam.startVideoSave('auto' + target + time.time())
+        cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'auto' + target)
         writing = True
         logging.info('Success!')
     
@@ -145,13 +160,13 @@ def checkInputs():
             cam.releaseVideo()
             logging.info('Success!')
         logging.info('Starting tele video...')
-        cam.startVideoSave('tele' + target + time.time())
+        cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'tele' + target)
         writing = True
         logging.info('Success!')
         
     if(saveVideo):
         logging.info('Started saving dev video')
-        cam.startVideoSave('dev' + target + time.time())
+        cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'dev' + target)
         logging.info('Success!')
     
 #quick and dirty function to get milliseconds from the time module
@@ -159,7 +174,7 @@ current_milli_time = lambda: int(round(time.time() * 1000))
 #################################
 
 ##### SOCKET INITIALIZATION #####
-riosocket = riosocket.RioSocket()
+riosocket = riosocket.RioSocket(target)
 #################################
 
 ##### CAMERA INITIALIZATION #####
@@ -205,7 +220,7 @@ while(True):
     #thresholded = np.uint8(np.clip(gray, np.percentile(gray, t_val), 100)) could try to switch to blue-scale later
     if not HEADLESS: cv2.imshow("thresholded", thresholded)
 
-    if (version == 2): 
+    if (version == 2): # OpenCV has differnt syntax in 3
         contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
     else: 
         contour_im, contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE) #Find the contours on the thresholded image
@@ -215,49 +230,48 @@ while(True):
     if not HEADLESS:
         thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR) #turn it back to BGR so that when we draw things they show up in BGR        
     
-    found = False
+    found = False # Because we just got the image so no targets have been found
     
     if len(contours) > 10: 
         if DEBUG: print 'To many contours to process'
-        checkInputs()
+        cleanup()
         continue
     
     for s1 in contours:
-        if found:
+        if found: 
             break
         s1box = cv2.minAreaRect(s1)
-        if s1box[1][1] == 0: continue
+        if s1box[1][1] == 0: continue # Ignore contours with 0 width
         for s2 in contours:
-            if s1 is not s2:
+            if s1 is not s2: # Don't want to compare a contour to itself
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
                 if s2box[1][1] == 0: continue # 0 width contours are not interesting (and skip if you have to divide by width)
-                if not DEBUG:
-                    if classifier.classify(s1box, s2box, DEBUG, target): #look at classifiers.py
-                        if not HEADLESS:
-                            if (version == 2):
-                                s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
-                                s2rot = np.int0(cv2.cv.BoxPoints(s2box))
-                            else:
-                                s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
-                                s2rot = np.int0(cv2.boxPoints(s2box))
-                                
-                            cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
-                            cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
-                            cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
-                        if DEBUG: 
-                            print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
-                            if DEBUG > 1 and (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]): print 'To the left'
-                            else: print 'To the right '
-                        if target == 'goal': xProportional = map(int(s1box[0][0]), width)
-                        else: xProportional = map(int((s1box[0][0] + s2box[0][0]) / 2), width)
-                        lastKnown = xProportional
-                        if target == "goal":
-                            riosocket.send("goal", True, str(xProportional))
+                if classifier.classify(s1box, s2box, DEBUG, target): #look at classifiers.py
+                    if not HEADLESS:
+                        if (version == 2):
+                            s1rot = np.int0(cv2.cv.BoxPoints(s1box)) #draw the actual rectangles
+                            s2rot = np.int0(cv2.cv.BoxPoints(s2box))
                         else:
-                            riosocket.send("gear", True, str(xProportional))
-                        if DEBUG : print("Found: " + str(xProportional))
-                        found = True
-                        break
+                            s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
+                            s2rot = np.int0(cv2.boxPoints(s2box))
+                            
+                        cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
+                        cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
+                        cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
+                    if DEBUG: 
+                        print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
+                        if DEBUG > 1 and (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]): print 'To the left'
+                        else: print 'To the right '
+                    if target == 'goal': xProportional = map(int(s1box[0][0]), width)
+                    else: xProportional = map(int((s1box[0][0] + s2box[0][0]) / 2), width)
+                    lastKnown = xProportional
+                    if target == "goal":
+                        riosocket.send("goal", True, str(xProportional))
+                    else:
+                        riosocket.send("gear", True, str(xProportional))
+                    if DEBUG : print("Found: " + str(xProportional))
+                    found = True
+                    break
 
     if not found: 
         if target == "goal":
@@ -266,4 +280,4 @@ while(True):
             riosocket.send("gear", False, str(lastKnown))
         '''print("Last:  " + str(lastKnown))'''
 
-    checkInputs()
+    cleanup()

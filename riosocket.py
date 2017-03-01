@@ -1,9 +1,12 @@
 #RioSocket.py
 #Formats data to be sent of to cMessenger
-import socket, os, threading
+import numpy as np
+import socket, os, threading, cv2, time
 
 HOST = "10.19.83.2"
-PORT = 5802 # TODO port cannot be hardcoded.
+TURRETPORT = 5802 # TODO port cannot be hardcoded.
+GEARPORT = 5800
+DRIVERPORT = 5804
 data = ''
 shutdown = False
 
@@ -21,7 +24,10 @@ class cListen (threading.Thread):
             except: pass
 
 class RioSocket():
-    def __init__(self):
+    def __init__(self, target):
+        if target == 'gear': port = GEARPORT
+        elif target == 'goal': port = TURRETPORT
+        else: logging.critical('Unknown target type! Cannot send target pos data!')
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         thread = cListen()
         thread.start()
@@ -30,10 +36,16 @@ class RioSocket():
         type = 1 if type == "goal" else 0
         isFound = 1 if isFound else 0
         message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
-        try: 
-            self.sock.sendto(message, (HOST, PORT))
-           
+        try:
+            self.sock.sendto(message, (HOST, port))
         except: pass
+        
+    def sendVid(self, frame):
+        frame = cv2.resize(frame, (0,0), fx=0.2, fy=0.2)
+        frame = frame[:,:,0]
+        frameStr = cv2.imencode('.jpg', frame)[1].tostring()
+        print(len(frameStr))
+        self.sock.sendto(frameStr, (HOST, DRIVERPORT)) 
 
     def recv(self):
         global data

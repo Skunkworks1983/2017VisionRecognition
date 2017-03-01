@@ -2,7 +2,7 @@ import numpy as np
 import socket, cv2, time
 
 HOST = ""
-PORT = 5555
+PORT = 5802
 
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -17,7 +17,7 @@ except:
     print 'Bind failed.'
 
 while True:
-    data, addrs = s.recvfrom(10000)
+    data, addrs = s.recvfrom(7000)
     
     nparr = np.fromstring(data, np.uint8)
     
