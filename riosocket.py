@@ -24,9 +24,9 @@ class cListen (threading.Thread):
             except: pass
 
 class RioSocket():
-    def __init__(self, pi):
-        if pi = 'gear': PORT = GEARPORT
-        elif target = 'goal': PORT = TURRETPORT
+    def __init__(self, target):
+        if target == 'gear': PORT = GEARPORT
+        elif target == 'goal': PORT = TURRETPORT
         else: logging.critical('Unknown target type! Cannot send target pos data!')
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         thread = cListen()
