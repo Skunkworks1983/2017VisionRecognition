@@ -25,8 +25,8 @@ class cListen (threading.Thread):
 
 class RioSocket():
     def __init__(self, target):
-        if target == 'gear': PORT = GEARPORT
-        elif target == 'goal': PORT = TURRETPORT
+        if target == 'gear': port = GEARPORT
+        elif target == 'goal': port = TURRETPORT
         else: logging.critical('Unknown target type! Cannot send target pos data!')
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         thread = cListen()
@@ -36,8 +36,8 @@ class RioSocket():
         type = 1 if type == "goal" else 0
         isFound = 1 if isFound else 0
         message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
-        try: 
-            self.sock.sendto(message, (HOST, PORT))
+        try:
+            self.sock.sendto(message, (HOST, port))
         except: pass
         
     def sendVid(self, frame):
