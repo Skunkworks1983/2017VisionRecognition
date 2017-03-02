@@ -42,6 +42,7 @@ print(args)
 #####   CHANGE WORKING DIR  #####
 # We want to put our logs and videos on any usb devices attached to the pis.
 if inputType == 'pi':
+    time.sleep(20) # Wait for the pi to turn on so we can find the usb drive
     for dirpath, dirs, files in os.walk("/media/pi"):
         print('step')
         if usbFound: continue
