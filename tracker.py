@@ -112,7 +112,7 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
         cv2.imshow('image', frame)
     
     if DEBUG and cv2.waitKey(1) & 0xFF == ord(' '):
-        cv2.imwrite(sys.argv[1] + str(imageNum) +  '.png', saved) #save the current image
+        cv2.imwrite(("%m-%d-%H-%M-%S-", time.gmtime()) + socket.gethostname() + '.png', saved) #save the current image
         imageNum = imageNum + 1
         
     elif cv2.waitKey(1) & 0xFF == ord('q'):
@@ -256,7 +256,7 @@ while(True):
                             s1rot = np.int0(cv2.boxPoints(s1box)) #draw the actual rectangles
                             s2rot = np.int0(cv2.boxPoints(s2box))
                             
-                        cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw #Draw what?
+                        cv2.drawContours(frame, [s1rot], 0, (0, 0, 255), 2) #draw contours
                         cv2.drawContours(frame, [s2rot], 0, (0, 0, 255), 2)
                         cv2.line(frame, (int(s1box[0][0]), int(s1box[0][1])), (int(s2box[0][0]), int(s2box[0][1])), (255, 0, 0), 2) #draw a line connecting the boxes
                     if DEBUG: 
