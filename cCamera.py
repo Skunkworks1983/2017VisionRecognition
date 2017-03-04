@@ -51,7 +51,8 @@ class cCamera:
             except:
                 logging.critical('Failed to create camera: ' + str(sys.exc_info()[0]))
                 raise
-                
+	    logging.info('Created camera')
+            
         elif(self.inputType.upper() == "VIDEO" or self.inputType.upper() == "FILE"):
             self.cap = cv2.VideoCapture(self.filename)
             
@@ -107,4 +108,5 @@ class cCamera:
         if self.save:
             queue.put(frame.copy())
         
+	logging.info('got frame')
         return frame
