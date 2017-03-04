@@ -67,6 +67,7 @@ else: os.chdir('./Logs') # Otherwise it's nice to not clutter up the repo, so st
 # If we're not on command line, it's very useful to have logs of what happened
 logName = time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + socket.gethostname() + '.log'
 logging.basicConfig(filename=logName,level=logging.DEBUG)
+logging.info('Log initialized')
 #################################
 
 #####  VARIOUS DECLERATION  #####
@@ -177,6 +178,7 @@ current_milli_time = lambda: int(round(time.time() * 1000))
 
 ##### SOCKET INITIALIZATION #####
 riosocket = riosocket.RioSocket(target)
+logging.info('Created riosocket')
 #################################
 
 ##### CAMERA INITIALIZATION #####

@@ -55,10 +55,10 @@ else:
 	# do we need to revert IP and/or hostname?
 	if gearIP in dhcpConfigData or goalPI in oldHostname or goalIP in dhcpConfigData or goalPI in oldHostname:
 		if goalIP in dhcpConfigData:
-                        print 'goalIP'
+            print 'goalIP'
 			dhcpConfigData = dhcpConfigData.replace(configData(goalIP),'#generic no static')
 		if gearIP in dhcpConfigData:
-                        print 'gearIP'
+            print 'gearIP'
 			dhcpConfigData = dhcpConfigData.replace(configData(gearIP),'#generic no static')
 		with open(dhcpconf, 'w') as myfile:
 			myfile.write(dhcpConfigData)
