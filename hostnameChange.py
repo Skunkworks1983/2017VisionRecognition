@@ -14,7 +14,13 @@ import RPi.GPIO as GPIO
 import filecmp
 
 def configData(IP):
-	return str('#static ip\ninterface eth0\nstatic ip_address='+IP+'/24\nstatic routers=10.19.83.1\nstatic domain_name_servers=8.8.8.8 8.8.4.4\n')
+        return str('#static ip\ninterface eth0\nstatic ip_address='+IP+'/24\nstatic routers=10.19.83.1\nstatic domain_name_servers=8.8.8.8 8.8.4.4\n')
+
+def lowPowerConfig():
+        os.system("/opt/vc/bin/tvservice -o");
+        # turn off wifi
+        os.system('sudo ifconfig wlan0 down')
+
 
 GPIO.setmode(GPIO.BCM)  # use GPIO numbering (https://pinout.xyz/ was helpful here)
 GearSignalPin = 21
@@ -34,7 +40,7 @@ generic = False
 # read the dhcpconf file to see if need changing
 dhcpconf = '/etc/dhcpcd.conf'
 with open(dhcpconf, 'r') as myfile:
-	dhcpConfigData=myfile.read()
+        dhcpConfigData=myfile.read()
 
 # get the current hostname
 with open('/etc/hostname','r') as myhfile:
@@ -45,11 +51,17 @@ if not GPIO.input(GearSignalPin):
 	desiredHostname = gearPI
 	desiredIP = gearIP
 	wrongIP = goalIP
+
+	# turn hdmi off
+	lowPowerConfig()
 elif not GPIO.input(GoalSignalPin):
 	print 'Jumper on goal pin'
 	desiredHostname = goalPI
 	desiredIP = goalIP
 	wrongIP = gearIP
+
+	#turn hdmi off
+	lowPowerConfig()
 else:
 	print 'No jumpers installed'
 	# do we need to revert IP and/or hostname?
@@ -76,9 +88,6 @@ else:
 		os.system('sudo shutdown -r now')
 	generic = True
 	
-# turn off wifi
-os.system('sudo ifconfig wlan0 down')
-
 # do we need to update IP and/or hostname?
 if not generic:
         if desiredIP not in dhcpConfigData or desiredHostname not in oldHostname:
