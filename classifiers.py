@@ -1,4 +1,5 @@
-#TODO header comments
+# classifier.py is a class that is called to deternmine whether two given contours are targets.
+# it can find the boiler or the gear lift.
 
 import math
 

@@ -9,20 +9,54 @@
 # Connect GPIO 26 (pin 37) to GND (pin 39) to set it as goalPI.
 # Connect no pins to set it as genericPI.
 #
-import os
-import RPi.GPIO as GPIO
-import filecmp
+import os, filecmp, sys, time, logging
+#import RPi.GPIO as GPIO
+
+#####   CHANGE WORKING DIR  #####
+# We want to put our logs on any usb devices attached to the pis.
+usbFound = False
+time.sleep(15) # Wait for the pi to turn on so we can find the usb drive
+for dirpath, dirs, files in os.walk("/media/pi"):
+    print('step')
+    if usbFound: break
+    for name in files:
+        if name == 'paella':
+            os.path.join(dirpath, name)
+            os.chdir(dirpath)
+            usbFound = True
+            break
+    if usbFound == True: break
+    for name in dirs:
+        if name == 'System Volume Information':
+            os.path.join(dirpath, name)
+            os.chdir(dirpath)
+            usbFound = True
+            break
+if not usbFound:
+    os.chdir('./Logs') # Otherwise it's nice to not clutter up the repo, so stick logs in a differnt directory
+#################################
+
+#####      LOGGING INIT     #####
+# If we're not on command line, it's very useful to have logs of what happened
+logName = time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'hostnamechange.log'
+logging.basicConfig(filename=logName,level=logging.DEBUG)
+logging.info('Log initialized')
+def error():
+    return str(sys.exc_info()[0])
+#################################
 
 def configData(IP):
-        return str('#static ip\ninterface eth0\nstatic ip_address='+IP+'/24\nstatic routers=10.19.83.1\nstatic domain_name_servers=8.8.8.8 8.8.4.4\n')
+    return str('#static ip\ninterface eth0\nstatic ip_address='+IP+'/24\nstatic routers=10.19.83.1\nstatic domain_name_servers=8.8.8.8 8.8.4.4\n')
 
+try: GPIO.setmode(GPIO.BCM)  # use GPIO numbering (https://pinout.xyz/ was helpful here)
+except: 
+    logging.critical('Failed to set GPIO mode ' + error())
+    raise
 def lowPowerConfig():
         os.system("/opt/vc/bin/tvservice -o");
         # turn off wifi
         os.system('sudo ifconfig wlan0 down')
 
-
-GPIO.setmode(GPIO.BCM)  # use GPIO numbering (https://pinout.xyz/ was helpful here)
 GearSignalPin = 21
 GoalSignalPin = 26
 GPIO.setup(GearSignalPin, GPIO.IN, pull_up_down=GPIO.PUD_UP) # so it reads high if not grounded
@@ -30,6 +64,7 @@ GPIO.setup(GoalSignalPin, GPIO.IN, pull_up_down=GPIO.PUD_UP) # so it reads high 
 
 gearIP = '10.19.83.6'
 goalIP = '10.19.83.7'
+logging.debug('gearIP: ' + gearIP + ' goalIP: ' + goalIP)
 
 gearPI = 'gear-pi'
 goalPI = 'goal-pi'
@@ -40,11 +75,14 @@ generic = False
 # read the dhcpconf file to see if need changing
 dhcpconf = '/etc/dhcpcd.conf'
 with open(dhcpconf, 'r') as myfile:
-        dhcpConfigData=myfile.read()
+    try: dhcpConfigData=myfile.read()
+    except: 
+        logging.critical(error())
+        raise
 
 # get the current hostname
 with open('/etc/hostname','r') as myhfile:
-	oldHostname = myhfile.read()
+    oldHostname = myhfile.read()
 
 if not GPIO.input(GearSignalPin):
 	print 'Jumper on gear pin'
@@ -63,13 +101,13 @@ elif not GPIO.input(GoalSignalPin):
 	#turn hdmi off
 	lowPowerConfig()
 else:
-	print 'No jumpers installed'
-	# do we need to revert IP and/or hostname?
-	if gearIP in dhcpConfigData or goalPI in oldHostname or goalIP in dhcpConfigData or goalPI in oldHostname:
-		if goalIP in dhcpConfigData:
+    print 'No jumpers installed'
+    # do we need to revert IP and/or hostname?
+    if gearIP in dhcpConfigData or goalPI in oldHostname or goalIP in dhcpConfigData or goalPI in oldHostname:
+        if goalIP in dhcpConfigData:
             print 'goalIP'
-			dhcpConfigData = dhcpConfigData.replace(configData(goalIP),'#generic no static')
-		if gearIP in dhcpConfigData:
+            dhcpConfigData = dhcpConfigData.replace(configData(goalIP),'#generic no static')
+        if gearIP in dhcpConfigData:
             print 'gearIP'
 			dhcpConfigData = dhcpConfigData.replace(configData(gearIP),'#generic no static')
 		with open(dhcpconf, 'w') as myfile:
