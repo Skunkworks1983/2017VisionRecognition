@@ -76,7 +76,9 @@ classifier = classifiers.cClassifier()
 
 if not HEADLESS: cv2.namedWindow('image')
 
+#Video writing
 writing = False
+oldData = 'Data not initialized'
 
 #various variables that are counters or placeholders for later
 lastKnown = "0"
@@ -125,9 +127,13 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
         riosocket.sendVid(frame)
         
     # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
-    data = riosocket.recv()
-
     global writing
+    global oldData
+    
+    data = riosocket.recv()
+    if data == oldData:
+        oldData = data
+        data = 'repeated data'
     
     if(data == "shutdown"):
         logging.info('Recieved shutdown command.')
