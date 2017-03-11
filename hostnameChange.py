@@ -10,7 +10,7 @@
 # Connect no pins to set it as genericPI.
 #
 import os, filecmp, sys, time, logging
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 #####   CHANGE WORKING DIR  #####
 # We want to put our logs on any usb devices attached to the pis.
