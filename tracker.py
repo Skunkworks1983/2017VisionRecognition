@@ -5,6 +5,7 @@
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
+try: from gpiozero import LED
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
 #####     CHECK HOSTNAME    #####
@@ -89,6 +90,17 @@ times = []
 
 #Print out all of a np array (only matters if we're in debug mode)
 if DEBUG: np.set_printoptions(threshold=np.nan)
+
+if inputType == 'pi':
+    led1 = LED(4)
+    led2 = LED(11)
+    led3 = LED(18)
+    led4 = LED(24)
+
+    led1.off()
+    led2.off()
+    led3.off()
+    led4.on()
 #################################
 
 #####       FUNCTIONS       #####
@@ -97,6 +109,27 @@ if DEBUG: np.set_printoptions(threshold=np.nan)
 def map(val, width):
     return ((2*val/width) - 1)
 
+def statusWritingVideo():
+    if inputType == 'pi':
+        led2.on()
+    
+def statusNotWritingVideo():
+    if inputType == 'pi':
+        led2.off()
+    
+def statusGotFrame():
+    if inputType == 'pi':
+        global led1On
+        if led1On:
+            led1.off()
+        else:
+            led1.on()
+        led1On = !led1On
+
+def statusShuttingDown():
+    if inputType == 'pi':
+        led3.on()
+    
 def cleanup(): # Run this at the end of the while loop, or when it is terminated early
     global HEADLESS
     if DEBUG: # For displaying fps
@@ -137,22 +170,26 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
     
     if(data == "shutdown"):
         logging.info('Recieved shutdown command.')
+        statusShuttingDown()
         logging.info('Releasing camera...')
         cam.releaseCamera()
         logging.info('Success!')
         if writing: 
             cam.releaseVideo()
             logging.info('Released video')
-        logging.info('Trust me.')
+        logging.info('Shutting down...')
         os.system("sudo shutdown -h now")
 
     if(data == 'shutdownq'): # If you recieve a q, you dont want to shutdown the computer.
+        logging.info('Recieved shutdownq command.')
+        statusShuttingDown()
         logging.info('Releasing camera...')
         cam.releaseCamera()
         logging.info('Success!')
         if writing: 
             logging.info('Releasing video...')
             cam.releaseVideo()
+            statusNotWritingVideo()
             logging.info('Success!')
         logging.info('Exiting Program.')
         sys.exit()
@@ -161,21 +198,25 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
         logging.info('Starting auto video...')
         cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'auto' + target)
         writing = True
+        statusWritingVideo()
         logging.info('Success!')
     
     if(data == "tele"):
         if writing: 
             logging.info('Releasing auto video...')
             cam.releaseVideo()
+            statusNotWritingVideo()
             logging.info('Success!')
         logging.info('Starting tele video...')
         cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'tele' + target)
         writing = True
+        statusWritingVideo()
         logging.info('Success!')
         
     if(saveVideo):
         logging.info('Started saving dev video')
         cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'dev' + target)
+        statusWritingVideo()
         logging.info('Success!')
     
 #quick and dirty function to get milliseconds from the time module
@@ -202,6 +243,7 @@ while(True):
     # Capture frame-by-frame
     if DEBUG: print('Getting frame')
     frame = cam.nextFrame()
+    statusGotFrame()
     
     #if the image is not tall, skinny, and is a goal cam flip it
     #NOTE: Also flips over the y-axis
