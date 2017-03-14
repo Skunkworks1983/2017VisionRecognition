@@ -6,6 +6,7 @@
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np 
 try: from gpiozero import LED
+except: pass
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
 #####     CHECK HOSTNAME    #####
@@ -124,7 +125,7 @@ def statusGotFrame():
             led1.off()
         else:
             led1.on()
-        led1On = !led1On
+        led1On != led1On
 
 def statusShuttingDown():
     if inputType == 'pi':
