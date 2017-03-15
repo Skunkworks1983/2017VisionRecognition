@@ -109,7 +109,7 @@ if inputType == 'pi':
 #map [-width, width] -> [-1, 1] (so robot code doesn't have to care about window resolution)
 def map(val, width):
     return ((2*val/width) - 1)
-
+    
 def statusWritingVideo():
     if inputType == 'pi':
         led2.on()
@@ -130,6 +130,25 @@ def statusGotFrame():
 def statusShuttingDown():
     if inputType == 'pi':
         led3.on()
+    
+def sendTarget(s1box, s2box, type):
+    global target
+    global width
+    global lastKnown
+    if type == 'goal' or type == 'single': 
+        xProportional = map(int(s1box[0][0]), width)
+    elif type == 'gear': 
+        xProportional = map(int((s1box[0][0] + s2box[0][0]) / 2), width)
+    else:
+        xProportional = lastKnown
+    lastKnown = xProportional
+    if type == "goal":
+        riosocket.send("goal", True, str(xProportional))
+    if type == "singleGear":
+        riosocket.send("singleGear", True, str(xProportional))
+    else:
+        riosocket.send("gear", True, str(xProportional))
+    if DEBUG : print("Found: " + str(xProportional))
     
 def cleanup(): # Run this at the end of the while loop, or when it is terminated early
     global HEADLESS
@@ -234,6 +253,9 @@ logging.info('Created riosocket')
 fileName = "./test56.h264" #file of the video to load
 cam = cCamera.cCamera(inputType, fileName)
 version = cam.getSysInfo() # Not technically part of camera, but cCamera will always be where opencv is, so it's good to have the version function there
+frame = cam.nextFrame() # Check camera
+logging.debug('Camera is good')
+width = frame.shape[1] # Only needed for mapping, only do it once
 #################################
 
 ## MAIN CODE (HERE BE DRAGONS) ##    
@@ -250,10 +272,6 @@ while(True):
     #NOTE: Also flips over the y-axis
     if(frame.shape[1] > frame.shape[0] and target is 'goal'):
         frame = cv2.transpose(frame, frame)
-    
-    #resize the window and actually find the width and height
-    '''frame = cv2.resize(frame, (0,0), fx=0.3, fy=0.3)'''
-    width, height = frame.shape[1], frame.shape[0]
        
     #Copying mats seems heavy on the drive if we're going to be trying to save video
     if DEBUG: saved = frame.copy() #to save the image if spacebar was pressed 
@@ -284,6 +302,7 @@ while(True):
         thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR) #turn it back to BGR so that when we draw things they show up in BGR        
     
     found = False # Because we just got the image so no targets have been found
+    foundSingleGear = False
     
     if len(contours) > 10: 
         if DEBUG: print 'To many contours to process'
@@ -295,6 +314,10 @@ while(True):
             break
         s1box = cv2.minAreaRect(s1)
         if s1box[1][1] == 0: continue # Ignore contours with 0 width
+        approx = cv2.approxPolyDP(s1,0.01*cv2.arcLength(s1,True),True) # http://en.wikipedia.org/wiki/Ramer-Douglas-Peucker_algorithm Throwback. Is it bassically a rectangle?
+        if len(approx) == 4 and target == 'gear':
+            singleGearBox = s1box
+            foundSingleGear = True
         for s2 in contours:
             if s1 is not s2: # Don't want to compare a contour to itself
                 s2box = cv2.minAreaRect(s2)   #Compare all shapes against each other
@@ -315,22 +338,11 @@ while(True):
                         print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
                         if DEBUG > 1 and (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]): print 'To the left'
                         else: print 'To the right '
-                    if target == 'goal': xProportional = map(int(s1box[0][0]), width)
-                    else: xProportional = map(int((s1box[0][0] + s2box[0][0]) / 2), width)
-                    lastKnown = xProportional
-                    if target == "goal":
-                        riosocket.send("goal", True, str(xProportional))
-                    else:
-                        riosocket.send("gear", True, str(xProportional))
-                    if DEBUG : print("Found: " + str(xProportional))
+                    
                     found = True
                     break
 
-    if not found: 
-        if target == "goal":
-            riosocket.send("goal", False, str(lastKnown))
-        else:
-            riosocket.send("gear", False, str(lastKnown))
-        '''print("Last:  " + str(lastKnown))'''
+    if not found and foundSingleGear:
+        sendTarget(singleGearBox, None, 'single')
 
     cleanup()

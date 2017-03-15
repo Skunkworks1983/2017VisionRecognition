@@ -107,6 +107,5 @@ class cCamera:
         
         if self.save:
             queue.put(frame.copy())
-        
-	logging.info('got frame')
+            
         return frame
