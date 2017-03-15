@@ -338,11 +338,17 @@ while(True):
                         print 'Size ratio: ' + str((s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]))
                         if DEBUG > 1 and (s1box[1][0]*s1box[1][1])/(s2box[1][0]*s2box[1][1]): print 'To the left'
                         else: print 'To the right '
+                    if target == 'goal':
+                        sendTarget(s1box, None, 'goal')
+                    else:
+                        sendTarget(s1box, s2box, 'gear')
                     
                     found = True
                     break
 
     if not found and foundSingleGear:
         sendTarget(singleGearBox, None, 'single')
-
+    
+    if not found and not foundSingleGear:
+        sendTarget(None, None, None)
     cleanup()
