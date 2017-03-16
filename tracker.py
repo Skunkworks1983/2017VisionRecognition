@@ -44,10 +44,12 @@ print(args)
 #####   CHANGE WORKING DIR  #####
 # We want to put our logs and videos on any usb devices attached to the pis.
 usbFound = False
+os.chdir('./Logs')
 if inputType == 'pi':
-    time.sleep(20) # Wait for the pi to turn on so we can find the usb drive
+    #time.sleep(20) # Wait for the pi to turn on so we can find the usb drive
     for dirpath, dirs, files in os.walk("/media/pi"):
-        print('step')
+        if DEBUG:
+            print('step')
         if usbFound: continue
         for name in files:
             if name == 'paella':
@@ -61,14 +63,13 @@ if inputType == 'pi':
                 os.path.join(dirpath, name)
                 os.chdir(dirpath)
                 usbFound = True
-                continue    
-else: os.chdir('./Logs') # Otherwise it's nice to not clutter up the repo, so stick logs in a differnt directory
+                continue
 #################################
     
 #####      LOGGING INIT     #####
 # If we're not on command line, it's very useful to have logs of what happened
 logName = time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + socket.gethostname() + '.log'
-logging.basicConfig(filename=logName,level=logging.DEBUG)
+logging.basicConfig(filename=logName, level=logging.DEBUG)
 logging.info('Log initialized')
 #################################
 
@@ -80,7 +81,7 @@ if not HEADLESS: cv2.namedWindow('image')
 
 #Video writing
 writing = False
-oldData = 'Data not initialized'
+oldData = 'data not initialized'
 
 #various variables that are counters or placeholders for later
 lastKnown = "0"
@@ -98,6 +99,8 @@ if inputType == 'pi':
     led3 = LED(18)
     led4 = LED(24)
 
+    led1On = False
+    
     led1.off()
     led2.off()
     led3.off()
@@ -183,10 +186,14 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
     global writing
     global oldData
     
-    data = riosocket.recv()
+    data = str(riosocket.recv())
+    print(data)
     if data == oldData:
-        oldData = data
         data = 'repeated data'
+    else:
+        msg = 'Received ' + data + ' command from roborio.'
+        logging.info(msg)
+        oldData = data
     
     if(data == "shutdown"):
         logging.info('Recieved shutdown command.')
