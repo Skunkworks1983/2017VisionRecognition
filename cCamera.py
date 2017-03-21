@@ -20,6 +20,7 @@ class cWriteVideo (threading.Thread):
         framerate = 20.0 # Technically does not matter, as we have no framerate control anyways, but we need to pass it something
         if version == 3: self.out = cv2.VideoWriter(videoName + '.avi', cv2.VideoWriter_fourcc(*'XVID'), framerate, (640, 480))
         else: out = cv2.VideoWriter(self.videoName + '.avi', cv2.cv.CV_FOURCC(*'XVID'), framerate, piResolution)
+        logging.info('Initialized cWriteVideo.')
     def run(self):
         global cleaningUp
         while not cleaningUp:
@@ -31,7 +32,7 @@ class cWriteVideo (threading.Thread):
         self.out.release() # Finalize video saving. If your video is corrupted, it is because this did not get called successfully.
         global doneCleaning
         doneCleaning = True
-        print('Exiting cWriteVideo thread...')
+        logging.info('Exiting cWriteVideo thread...')
 
 class cCamera:
     def __init__(self, inputType, filename):
@@ -78,7 +79,7 @@ class cCamera:
         
     def releaseCamera(self):
         try: self.cap.release()
-        except: logging.info('Exception in self.cap.release:' + str(sys.exc_info()[0]))
+        except: logging.info('Exception in self.cap.release: ' + str(sys.exc_info()[0]))
     
     def releaseVideo(self):
         global cleaningUp, doneCleaning

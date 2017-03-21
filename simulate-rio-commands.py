@@ -1,4 +1,4 @@
-import socket, sys
+import socket, sys, time
 
 HOST = 'localhost'
 PORT = 5800
@@ -9,6 +9,9 @@ try:
     print('Socket created!')
 except:
     print('Socket creation fail!')
-   
+
+print(sys.argv[1])
+
 while(True):
     sock.sendto(sys.argv[1], (HOST, PORT))
+    time.sleep(1)

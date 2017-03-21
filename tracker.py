@@ -189,7 +189,7 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
     data = str(riosocket.recv())
     print(data)
     if data == oldData:
-        data = 'repeated data'
+        return
     else:
         msg = 'Received ' + data + ' command from roborio.'
         logging.info(msg)
@@ -218,7 +218,9 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
             cam.releaseVideo()
             statusNotWritingVideo()
             logging.info('Success!')
-        logging.info('Exiting Program.')
+        logging.info('Releasing windows...')
+        cv2.destroyAllWindows()
+        logging.info('I feel like I should make a reference to something here')
         sys.exit()
         
     if(data == "auto"): # For recording video
