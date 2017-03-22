@@ -2,9 +2,10 @@
 
 # tracker.py
 # Main file that is processing camera frames and trying to find the vision target, then send that val over UDP to the roborio
+# TODO cListen get hung up on recvfrom when shutting down, preventing clean windows command line exit
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
-import numpy as np 
+import numpy as np
 try: from gpiozero import LED
 except: pass
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
@@ -81,7 +82,7 @@ if not HEADLESS: cv2.namedWindow('image')
 
 #Video writing
 writing = False
-oldData = 'data not initialized'
+oldData = 'no data recieved yet'
 
 #various variables that are counters or placeholders for later
 lastKnown = "0"
@@ -153,6 +154,22 @@ def sendTarget(s1box, s2box, type):
         riosocket.send("gear", True, str(xProportional))
     if DEBUG : print("Found: " + str(xProportional))
     
+def releaseAll():
+    statusShuttingDown()
+    logging.info('Releasing cListen...')
+    riosocket.shutdown()
+    logging.info('Success!')
+    logging.info('Releasing camera...')
+    cam.releaseCamera()
+    logging.info('Success!')
+    if writing: 
+        logging.info('Releasing video...')
+        cam.releaseVideo()
+        statusNotWritingVideo()
+        logging.info('Success!')
+    logging.info('Releasing windows...')
+    cv2.destroyAllWindows()
+    
 def cleanup(): # Run this at the end of the while loop, or when it is terminated early
     global HEADLESS
     if DEBUG: # For displaying fps
@@ -176,7 +193,6 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
         imageNum = imageNum + 1
         
     elif cv2.waitKey(1) & 0xFF == ord('q'):
-        logging.info('Recieved shutdown key.')
         riosocket.shutdown()
         
     if videosend: # Send video over udp to the roborio
@@ -186,8 +202,7 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
     global writing
     global oldData
     
-    data = str(riosocket.recv())
-    print(data)
+    data = riosocket.recv()
     if data == oldData:
         return
     else:
@@ -196,32 +211,16 @@ def cleanup(): # Run this at the end of the while loop, or when it is terminated
         oldData = data
     
     if(data == "shutdown"):
-        logging.info('Recieved shutdown command.')
-        statusShuttingDown()
-        logging.info('Releasing camera...')
-        cam.releaseCamera()
-        logging.info('Success!')
-        if writing: 
-            cam.releaseVideo()
-            logging.info('Released video')
+        logging.info('Activating pi shutdown protocol.')
+        releaseAll()
         logging.info('Shutting down...')
         os.system("sudo shutdown -h now")
 
     if(data == 'shutdownq'): # If you recieve a q, you dont want to shutdown the computer.
-        logging.info('Recieved shutdownq command.')
-        statusShuttingDown()
-        logging.info('Releasing camera...')
-        cam.releaseCamera()
-        logging.info('Success!')
-        if writing: 
-            logging.info('Releasing video...')
-            cam.releaseVideo()
-            statusNotWritingVideo()
-            logging.info('Success!')
-        logging.info('Releasing windows...')
-        cv2.destroyAllWindows()
-        logging.info('I feel like I should make a reference to something here')
-        sys.exit()
+        logging.info('Activating windows shutdown protocol.')
+        releaseAll()
+        logging.info('Shutting down...')
+        ys.exit()
         
     if(data == "auto"): # For recording video
         logging.info('Starting auto video...')
@@ -263,7 +262,7 @@ fileName = "./test56.h264" #file of the video to load
 cam = cCamera.cCamera(inputType, fileName)
 version = cam.getSysInfo() # Not technically part of camera, but cCamera will always be where opencv is, so it's good to have the version function there
 frame = cam.nextFrame() # Check camera
-logging.debug('Camera is good')
+logging.info('Camera is good')
 width = frame.shape[1] # Only needed for mapping, only do it once
 #################################
 
