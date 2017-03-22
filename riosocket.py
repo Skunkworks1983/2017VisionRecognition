@@ -13,8 +13,8 @@ shutdown = False
 class cListen (threading.Thread):
     def __init__(self, port):
         threading.Thread.__init__(self)
-        self.sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock2.bind(("", port))
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(("", port))
         self.MSG_LEN = 1024
         logging.info('Initialized cListen.')
         
@@ -22,12 +22,17 @@ class cListen (threading.Thread):
         global data
         global shutdown
         while data is not 'shutdown' and not shutdown:
-            data, addrs = self.sock2.recvfrom(self.MSG_LEN)
+            data, addrs = self.sock.recvfrom(1024)
+        shutdown = False
 
 class RioSocket():
     def __init__(self, target):
-        if target == 'gear': port = GEARPORT
-        elif target == 'goal': port = TURRETPORT
+        if target == 'gear': 
+            port = GEARPORT
+            logging.info('Assigned gearport')
+        elif target == 'goal': 
+            port = TURRETPORT
+            logging.info('Assigned turretport')
         else: logging.critical('Unknown target type! Cannot send target pos data!')
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         thread = cListen(port)
