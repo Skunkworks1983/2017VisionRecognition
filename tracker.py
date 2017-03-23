@@ -6,7 +6,9 @@
 
 from __future__ import division #IMPORTANT: Float division will work as intended (3/2 == 1.5 instead of 1, no need to do 3.0/2 == 1.5)
 import numpy as np
-try: from gpiozero import LED
+try: 
+    import RPi.GPIO as GPIO
+    from gpiozero import LED
 except: pass
 import cv2, time, sys, math, classifiers, argparse, cCamera, riosocket, os, socket, logging
 
@@ -95,6 +97,15 @@ times = []
 if DEBUG: np.set_printoptions(threshold=np.nan)
 
 if inputType == 'pi':
+    lightPin = 12
+    dutyCycle = 100
+    FREQUENCY = 50
+
+    GPIO.setmode(GPIO.BCM) 
+    GPIO.setup(lightPin, GPIO.OUT)
+    pwm = GPIO.PWM(lightPin, FREQUENCY)
+    pwm.start(dutyCycle) # start the PWM
+
     led1 = LED(4)
     led2 = LED(11)
     led3 = LED(18)
@@ -314,8 +325,14 @@ while(True):
     
     if len(contours) > 10: 
         if DEBUG: print 'To many contours to process'
+        if inputType = pi:
+            dutyCycle = dutyCycle * .8
+            pwm.ChangeDutyCycle(dutyCycle)
         cleanup()
         continue
+    elif: dutyCycle < 80 and inputType = pi:
+        dutyCycle = dutyCycle * 1.2
+        pwm.ChangeDutyCycle(dutyCycle)
     
     for s1 in contours:
         if found: 
