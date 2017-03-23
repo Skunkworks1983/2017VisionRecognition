@@ -325,12 +325,12 @@ while(True):
     
     if len(contours) > 10: 
         if DEBUG: print 'To many contours to process'
-        if inputType = pi:
+        if inputType == pi:
             dutyCycle = dutyCycle * .8
             pwm.ChangeDutyCycle(dutyCycle)
         cleanup()
         continue
-    elif: dutyCycle < 80 and inputType = pi:
+    elif dutyCycle < 80 and inputType == pi:
         dutyCycle = dutyCycle * 1.2
         pwm.ChangeDutyCycle(dutyCycle)
     
