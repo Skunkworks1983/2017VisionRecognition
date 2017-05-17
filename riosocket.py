@@ -1,14 +1,15 @@
-#RioSocket.py
-#Formats data to be sent of to cMessenger
-import numpy as np
-import socket, os, threading, cv2, time
+# RioSocket.py
+# Formats data to be sent of to cMessenger
+import socket
+import threading
+import cv2
 
 HOST = "10.19.83.2"
-TURRETPORT = 5802 # TODO port cannot be hardcoded.
+TURRETPORT = 5802  # TODO port cannot be hardcoded.
 GEARPORT = 5800
 DRIVERPORT = 5804
 data = ''
-shutdown = False
+manualShutdown = False
 
 class cListen (threading.Thread):
     def __init__(self):
@@ -18,10 +19,12 @@ class cListen (threading.Thread):
         
     def run(self):
         global data
-        global shutdown
-        while data is not 'shutdown' and not shutdown: 
-            try: data, addrs = self.sock.recvfrom(self.MSG_LEN)
-            except: pass
+        global manualShutdown
+        while data is not 'shutdown' and not manualShutdown:
+            try:
+                data, addrs = self.sock.recvfrom(self.MSG_LEN)
+            except:
+                pass
 
 class RioSocket():
     def __init__(self, target):
@@ -49,12 +52,12 @@ class RioSocket():
 
     def recv(self):
         global data
-        global shutdown
-        if not shutdown: 
+        global manualShutdown
+        if not manualShutdown:
             return data
         else:
             return 'shutdownq'
         
-    def shutdown(self):
-        global shutdown
-        shutdown = True
+    def manualShutdown(self):
+        global manualShutdown
+        manualShutdown = True
