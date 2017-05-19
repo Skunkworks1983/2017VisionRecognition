@@ -18,14 +18,8 @@ usbFound = False
 time.sleep(15) # Wait for the pi to turn on so we can find the usb drive
 for dirpath, dirs, files in os.walk("/media/pi"):
     print('step')
-    if usbFound: break
-    for name in files:
-        if name == 'paella':
-            os.path.join(dirpath, name)
-            os.chdir(dirpath)
-            usbFound = True
-            break
-    if usbFound == True: break
+    if usbFound:
+        break
     for name in dirs:
         if name == 'System Volume Information':
             os.path.join(dirpath, name)
@@ -75,7 +69,8 @@ generic = False
 # read the dhcpconf file to see if need changing
 dhcpconf = '/etc/dhcpcd.conf'
 with open(dhcpconf, 'r') as myfile:
-    try: dhcpConfigData=myfile.read()
+    try:
+        dhcpConfigData=myfile.read()
     except: 
         logging.critical(error())
         raise

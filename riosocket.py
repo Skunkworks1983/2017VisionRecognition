@@ -9,7 +9,7 @@ TURRETPORT = 5802  # TODO port cannot be hardcoded.
 GEARPORT = 5800
 DRIVERPORT = 5804
 data = ''
-manualShutdown = False
+manualshutdown = False
 
 class cListen (threading.Thread):
     def __init__(self):
@@ -19,8 +19,8 @@ class cListen (threading.Thread):
         
     def run(self):
         global data
-        global manualShutdown
-        while data is not 'shutdown' and not manualShutdown:
+        global manualshutdown
+        while data is not 'shutdown' and not manualshutdown:
             try:
                 data, addrs = self.sock.recvfrom(self.MSG_LEN)
             except:
@@ -52,12 +52,12 @@ class RioSocket():
 
     def recv(self):
         global data
-        global manualShutdown
-        if not manualShutdown:
+        global manualshutdown
+        if not manualshutdown:
             return data
         else:
             return 'shutdownq'
         
-    def manualShutdown(self):
-        global manualShutdown
-        manualShutdown = True
+    def manualshutdown(self):
+        global manualshutdown
+        manualshutdown = True

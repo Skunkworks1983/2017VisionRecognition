@@ -150,7 +150,7 @@ def cleanup():  # Run this at the end of the while loop, or when it is terminate
 
     elif cv2.waitKey(1) & 0xFF == ord('q'):
         logging.info('Recieved shutdown key.')
-        riosocket.shutdown()
+        riosocket.manualshutdown()
 
     if videosend:  # Send video over udp to the roborio
         riosocket.sendVid(frame)
