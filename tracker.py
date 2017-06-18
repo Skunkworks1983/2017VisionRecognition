@@ -23,9 +23,9 @@ import logging
 
 # -----    CHECK HOSTNAME    -----
 # We need to know if we're on the gear pi or the goal pi
-targetFromHostname = socket.gethostname()[:-3]
-if targetFromHostname != 'gear' and targetFromHostname != 'goal':
-    targetFromHostname = 'goal'  # no GPIO header installed, choose a sane default
+# targetFromHostname = socket.gethostname()[:-3]
+# if targetFromHostname != 'gear' and targetFromHostname != 'goal':
+#     targetFromHostname = 'goal'  # no GPIO header installed, choose a sane default
 # ---------------------------------
 
 # -----      ARG PARSING      -----
@@ -34,7 +34,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--inputType", type=str, default="pi", help="what input type should be used")
 ap.add_argument("-t", "--target", type=str, default="goal", help="what to detect")
 ap.add_argument("-m", "--minT_val", type=int, default=230, help="how hard to threshold")
-ap.add_argument("-s", "--saveVideo", type=str, default='False', help="whether to save video or not")
+# ap.add_argument("-s", "--saveVideo", type=str, default='False', help="whether to save video or not")
 ap.add_argument("-d", "--DEBUG", type=str, default='False', help="whether to output debug vals")
 ap.add_argument("-e", "--HEADLESS", type=str, default='True',
                 help="whether to display images")  # Passing anything is how you set it to true,
@@ -43,10 +43,10 @@ args = vars(ap.parse_args())
 inputType = args['inputType']
 target = args['target']
 minT_val = args['minT_val']
-if args['saveVideo'] is 'True':
-    saveVideo = True  # Arg parse actually does everything in strings, so we have to process bools ourselves
-else:
-    saveVideo = False
+# if args['saveVideo'] is 'True':
+#     saveVideo = True  # Arg parse actually does everything in strings, so we have to process bools ourselves
+# else:
+#     saveVideo = False
 if args['DEBUG'] == 'True':
     DEBUG = True
 else:
@@ -104,8 +104,8 @@ if not HEADLESS:
     cv2.namedWindow('image')
 
 # Video writing
-writing = False
-oldData = 'Data not initialized'
+# writing = False
+# oldData = 'Data not initialized'
 
 # various variables that are counters or placeholders for later
 lastKnown = "0"
@@ -127,85 +127,86 @@ def map_res(val, width_map):
     return (2 * val / width_map) - 1
 
 
-def cleanup():  # Run this at the end of the while loop, or when it is terminated early
-    global HEADLESS
-    if DEBUG:  # For displaying fps
-        global times
+# def cleanup():  # Run this at the end of the while loop, or when it is terminated early
+#     global HEADLESS
+#     if DEBUG:  # For displaying fps
+#         global times
+#
+#         t1 = current_milli_time()
+#
+#         t_d = t1 - t0
+#         times.append(t_d)
+#         times = times[-20:]
+#         avg_ms_per_frame = sum(times) / len(times)
+#         s_per_frame = avg_ms_per_frame / 1000
+#         fps = 1 / s_per_frame
+#         print("FPS: " + str(fps))
+#
+#     if not HEADLESS:
+#         cv2.imshow('image', frame)
+#
+#     if DEBUG and cv2.waitKey(1) & 0xFF == ord(' '):
+#         cv2.imwrite(("%m-%d-%H-%M-%S-", time.gmtime()) + socket.gethostname() + '.png', saved)  # save the current image
+#
+#     elif cv2.waitKey(1) & 0xFF == ord('q'):
+#         logging.info('Recieved shutdown key.')
+#         shutdown = True
+        # riosocket.manualshutdown()
 
-        t1 = current_milli_time()
-
-        t_d = t1 - t0
-        times.append(t_d)
-        times = times[-20:]
-        avg_ms_per_frame = sum(times) / len(times)
-        s_per_frame = avg_ms_per_frame / 1000
-        fps = 1 / s_per_frame
-        print("FPS: " + str(fps))
-
-    if not HEADLESS:
-        cv2.imshow('image', frame)
-
-    if DEBUG and cv2.waitKey(1) & 0xFF == ord(' '):
-        cv2.imwrite(("%m-%d-%H-%M-%S-", time.gmtime()) + socket.gethostname() + '.png', saved)  # save the current image
-
-    elif cv2.waitKey(1) & 0xFF == ord('q'):
-        logging.info('Recieved shutdown key.')
-        riosocket.manualshutdown()
-
-    if videosend:  # Send video over udp to the roborio
-        riosocket.sendVid(frame)
-
+    # if videosend:  # Send video over udp to the roborio
+    #     riosocket.sendVid(frame)
+    #
     # RIOSOCKET SHUTDOWN & VIDEOSAVE PROTOCOL
-    global writing
-    global oldData
+    # global writing
+    # global oldData
 
-    data = riosocket.recv()
-    if data == oldData:
-        oldData = data
-        data = 'repeated data'
-
-    if data == "shutdown":
-        logging.info('Received shutdown command.')
-        logging.info('Releasing camera...')
-        cam.releaseCamera()
-        logging.info('Success!')
-        if writing:
-            cam.releaseVideo()
-            logging.info('Released video')
-        logging.info('Trust me.')
-        os.system("sudo shutdown -h now")
-
-    if data == 'shutdownq':  # If you recieve a q, you dont want to shutdown the computer.
-        logging.info('Releasing camera...')
-        cam.releaseCamera()
-        logging.info('Success!')
-        if writing:
-            logging.info('Releasing video...')
-            cam.releaseVideo()
-            logging.info('Success!')
-        logging.info('Exiting Program.')
-        sys.exit()
-
-    if data == "auto":  # For recording video
-        logging.info('Starting auto video...')
-        cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'auto' + target)
-        writing = True
-        logging.info('Success!')
-
-    if data == "tele":
-        if writing:
-            logging.info('Releasing auto video...')
-            cam.releaseVideo()
-            logging.info('Success!')
-        logging.info('Starting tele video...')
-        cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'tele' + target)
-        writing = True
-        logging.info('Success!')
-
-    if saveVideo:
-        logging.info('Started saving dev video')
-        cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'dev' + target)
-        logging.info('Success!')
+    # data = riosocket.recv()
+    # if data == oldData:
+    #     oldData = data
+    #     data = 'repeated data'
+    #
+    # if data == "shutdown":
+    #     logging.info('Received shutdown command.')
+    #     logging.info('Releasing camera...')
+    #     cam.releaseCamera()
+    #     logging.info('Success!')
+    #     if writing:
+    #         cam.releaseVideo()
+    #         logging.info('Released video')
+    #     logging.info('Trust me.')
+    #     os.system("sudo shutdown -h now")
+    #
+    # if data == 'shutdownq':  # If you recieve a q, you dont want to shutdown the computer.
+    #     logging.info('Releasing camera...')
+    #     cam.releaseCamera()
+    #     logging.info('Success!')
+    #     if writing:
+    #         logging.info('Releasing video...')
+    #         cam.releaseVideo()
+    #         logging.info('Success!')
+    #     logging.info('Exiting Program.')
+    #     sys.exit()
+    #
+    # if data == "auto":  # For recording video
+    #     logging.info('Starting auto video...')
+    #     cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'auto' + target)
+    #     writing = True
+    #     logging.info('Success!')
+    #
+    # if data == "tele":
+    #     if writing:
+    #         logging.info('Releasing auto video...')
+    #         cam.releaseVideo()
+    #         logging.info('Success!')
+    #     logging.info('Starting tele video...')
+    #     cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'tele' + target)
+    #     writing = True
+    #     logging.info('Success!')
+    #
+    # if saveVideo:
+    #     logging.info('Started saving dev video')
+    #     cam.startVideoSave(time.strftime("%m-%d-%H-%M-%S-", time.gmtime()) + 'dev' + target)
+    #     logging.info('Success!')
 
 
 # quick and dirty function to get milliseconds from the time module
@@ -228,6 +229,11 @@ version = cam.getSysInfo()  # Not technically part of camera, but cCamera will a
 
 # ----- MAIN CODE (HERE BE DRAGONS) -----
 while True:
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        logging.info('Received shutdown key.')
+        cam.releaseCamera()
+        break
+
     # Get time start (for fps management)
     t0 = current_milli_time()
 
@@ -286,7 +292,7 @@ while True:
     if len(contours) > 10:
         if DEBUG:
             print 'To many contours to process'
-        cleanup()
+        # cleanup()
         continue
 
     for s1 in contours:
@@ -339,4 +345,4 @@ while True:
             riosocket.send("gear", False, str(lastKnown))
         '''print("Last:  " + str(lastKnown))'''
 
-    cleanup()
+    # cleanup()

@@ -11,34 +11,37 @@ DRIVERPORT = 5804
 data = ''
 manualshutdown = False
 
-class cListen (threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.MSG_LEN = 1024
-        
-    def run(self):
-        global data
-        global manualshutdown
-        while data is not 'shutdown' and not manualshutdown:
-            try:
-                data, addrs = self.sock.recvfrom(self.MSG_LEN)
-            except:
-                pass
+# class cListen (threading.Thread):
+#     def __init__(self):
+#         threading.Thread.__init__(self)
+#         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#         self.MSG_LEN = 1024
+#
+#     def run(self):
+#         global data
+#         global manualshutdown
+#         while data is not 'shutdown' and not manualshutdown:
+#             try:
+#                 data, addrs = self.sock.recvfrom(self.MSG_LEN)
+#             except:
+#                 pass
 
-class RioSocket():
+class RioSocket:
     def __init__(self, target):
-        if target == 'gear': port = GEARPORT
-        elif target == 'goal': port = TURRETPORT
-        else: logging.critical('Unknown target type! Cannot send target pos data!')
+        if target == 'gear':
+            port = GEARPORT
+        elif target == 'goal':
+            port = TURRETPORT
+        else:
+            logging.critical('Unknown target type! Cannot send target pos data!')
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        thread = cListen()
-        thread.start()
+        # thread = cListen()
+        # thread.start()
         
-    def send(self, type, isFound, x, y=0):
-        type = 1 if type == "goal" else 0
+    def send(self, goalType, isFound, x, y=0):
+        goalType = 1 if goalType == "goal" else 0
         isFound = 1 if isFound else 0
-        message = str(type) + " " + str(isFound) + " " + str(x) + " " + str(y)
+        message = str(goalType) + " " + str(isFound) + " " + str(x) + " " + str(y)
         try:
             self.sock.sendto(message, (HOST, port))
         except: pass
@@ -50,14 +53,14 @@ class RioSocket():
         print(len(frameStr))
         self.sock.sendto(frameStr, (HOST, DRIVERPORT)) 
 
-    def recv(self):
-        global data
-        global manualshutdown
-        if not manualshutdown:
-            return data
-        else:
-            return 'shutdownq'
-        
-    def manualshutdown(self):
-        global manualshutdown
-        manualshutdown = True
+    # def recv(self):
+    #     global data
+    #     global manualshutdown
+    #     if not manualshutdown:
+    #         return data
+    #     else:
+    #         return 'shutdownq'
+    #
+    # def manualshutdown(self):
+    #     global manualshutdown
+    #     manualshutdown = True
