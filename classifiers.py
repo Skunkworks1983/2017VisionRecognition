@@ -40,10 +40,7 @@ class cClassifier():
 def matchingRotation(s1, s2, sigma, getVal):
     angleSigma = sigma
     result = s1[2] < s2[2] + angleSigma and s1[2] > s2[2] - angleSigma
-    if not getVal:
-        return (result, s1[2] - s2[2])
-    else:
-        return result
+    return (result, s1[2] - s2[2])
             
 def distance(x1, y1, x2, y2):
     distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
@@ -58,10 +55,7 @@ def goalAreaRatio(s1, s2, sigma, getVal):
     areaRatio = area1/area2
     areaSigma = sigma
     result = areaRatio < 1.5 + areaSigma and areaRatio > 1.5 - areaSigma
-    if not getVal:
-        return (result, areaRatio)
-    else:
-        return result
+    return (result, areaRatio)
         
 def goalBetweenHeightRatio(s1, s2, sigma, getVal):
     betweenHeightSigma = sigma
@@ -70,10 +64,7 @@ def goalBetweenHeightRatio(s1, s2, sigma, getVal):
     maxRatio = 30
     minRatio = 0.5
     result = betweenHeightRatio < maxRatio and betweenHeightRatio > minRatio
-    if not getVal:
-        return (result , betweenHeightRatio)
-    else:
-        return betweenHeightRatio
+    return result , betweenHeightRatio
            
 def minAreaDiff(s1, s2, sigma, getVal):
     area1 = s1[1][0]*s1[1][1]
@@ -88,10 +79,7 @@ def gearAreaRatio(s1, s2, sigma, getVal):
     areaRatio = area1/area2
     areaSigma = sigma
     result = areaRatio < 1 + areaSigma and areaRatio > 1 - areaSigma
-    if not getVal:
-        return (result, areaRatio)
-    else:
-        return areaRatio
+    return result, areaRatio
  
 def gearBetweenHeightRatio(s1, s2, sigma, getVal):
     centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
@@ -106,7 +94,4 @@ def centersToTopRatio(s1, s2, sigma, getVal):
     centerDistance = distance(s1[0][0], s1[0][1], s2[0][0], s2[0][1])
     ratioToTop = centerDistance/s1[1][1]
     ratioToBottom = centerDistance/s2[1][1]
-    if not getVal:
-        return ratioToTop < 1.25 + heightSigma and ratioToTop > 1.25 - heightSigma
-    else:
-        return ratioToTop
+    return ratioToTop < 1.25 + heightSigma and ratioToTop > 1.25 - heightSigma, ratioToTop
