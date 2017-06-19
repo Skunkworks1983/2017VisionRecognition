@@ -336,9 +336,13 @@ while True:
                     if DEBUG:
                         print("Found: " + str(xProportional))
                     found = True
+                    if not HEADLESS:
+                        cv2.imshow("image", frame)
                     break
 
     if not found:
+        if not HEADLESS:
+            cv2.imshow("image", frame)
         if target == "goal":
             riosocket.send("goal", False, str(lastKnown))
         else:
