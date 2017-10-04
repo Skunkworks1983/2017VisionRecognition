@@ -18,6 +18,8 @@ import os
 import socket
 import logging
 
+# Comment
+
 # Code sections, now with more PEP 8
 # A E S T H E T I C S
 
